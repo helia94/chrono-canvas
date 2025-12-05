@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   ComposableMap,
   Geographies,
@@ -56,28 +56,50 @@ const countryToRegion: Record<string, Region> = {
   "LBY": "Africa & Middle East", "COD": "Africa & Middle East", "ZMB": "Africa & Middle East",
 };
 
-// Region center coordinates for rotation
-const regionCenters: Record<Region, [number, number]> = {
-  "Western Europe": [5, 48],
-  "Eastern Europe": [25, 50],
-  "North America": [-100, 45],
-  "Latin America": [-60, -15],
-  "East Asia": [115, 35],
-  "Africa & Middle East": [20, 10],
-};
-
 const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
   const [hoveredRegion, setHoveredRegion] = useState<Region | null>(null);
-  const center = regionCenters[selectedRegion];
+  const [rotation, setRotation] = useState<[number, number]>([0, 0]);
+  const [isDragging, setIsDragging] = useState(false);
+  const lastPosition = useRef<{ x: number; y: number } | null>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsDragging(true);
+    lastPosition.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !lastPosition.current) return;
+    
+    const deltaX = e.clientX - lastPosition.current.x;
+    const deltaY = e.clientY - lastPosition.current.y;
+    
+    setRotation(prev => [
+      prev[0] + deltaX * 0.5,
+      Math.max(-60, Math.min(60, prev[1] - deltaY * 0.5))
+    ]);
+    
+    lastPosition.current = { x: e.clientX, y: e.clientY };
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    lastPosition.current = null;
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+    lastPosition.current = null;
+  }, []);
 
   const getCountryFill = (countryCode: string) => {
     const region = countryToRegion[countryCode];
-    if (region === selectedRegion) return "hsl(43, 80%, 46%)"; // ochre
+    if (region === selectedRegion) return "hsl(43, 80%, 46%)";
     if (region === hoveredRegion) return "hsl(43, 80%, 46%, 0.3)";
     return "transparent";
   };
 
   const handleClick = (countryCode: string) => {
+    if (isDragging) return;
     const region = countryToRegion[countryCode];
     if (region) {
       onRegionChange(region);
@@ -86,11 +108,24 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
 
   return (
     <div className="w-full max-w-2xl mx-auto px-8 py-8">
-      <div className="paper-globe-container relative">
+      <div 
+        className="paper-globe-container relative cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
         {/* Region label */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
           <span className="font-display text-sm text-primary">
             {selectedRegion}
+          </span>
+        </div>
+
+        {/* Drag hint */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 opacity-50">
+          <span className="font-body text-xs text-muted-foreground">
+            Drag to rotate
           </span>
         </div>
         
@@ -99,11 +134,11 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
           projectionConfig={{
             scale: 180,
             center: [0, 0],
-            rotate: [-center[0], -center[1], 0]
+            rotate: [-rotation[0], -rotation[1], 0]
           }}
           width={400}
           height={400}
-          style={{ width: "100%", height: "auto" }}
+          style={{ width: "100%", height: "auto", pointerEvents: isDragging ? "none" : "auto" }}
         >
           {/* Subtle graticule lines */}
           <Graticule stroke="hsl(var(--foreground) / 0.08)" strokeWidth={0.4} />
@@ -120,12 +155,12 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
                     geography={geo}
                     onClick={() => handleClick(code)}
                     onMouseEnter={() => {
-                      if (region) setHoveredRegion(region);
-                      document.body.style.cursor = region ? "pointer" : "default";
+                      if (region && !isDragging) setHoveredRegion(region);
+                      document.body.style.cursor = isDragging ? "grabbing" : region ? "pointer" : "grab";
                     }}
                     onMouseLeave={() => {
                       setHoveredRegion(null);
-                      document.body.style.cursor = "default";
+                      document.body.style.cursor = isDragging ? "grabbing" : "grab";
                     }}
                     style={{
                       default: {
