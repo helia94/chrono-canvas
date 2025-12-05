@@ -24,19 +24,22 @@ export const artForms = [
   "Visual Arts",
   "Music",
   "Literature",
-  "Performance",
-  "Architecture",
-  "Film",
 ] as const;
 
-export const decades = [
+// Before 1900: 50-year intervals, after 1900: 10-year intervals
+export const timePeriods = [
+  "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850",
   "1900", "1910", "1920", "1930", "1940", "1950",
   "1960", "1970", "1980", "1990", "2000", "2010", "2020"
 ] as const;
 
+// Keep decades for backwards compatibility
+export const decades = timePeriods;
+
 export type Region = typeof regions[number];
 export type ArtForm = typeof artForms[number];
-export type Decade = typeof decades[number];
+export type TimePeriod = typeof timePeriods[number];
+export type Decade = TimePeriod; // Alias for backwards compatibility
 
 // Mock data with various decade/region/artForm combinations
 export const mockArtData: ArtData[] = [
