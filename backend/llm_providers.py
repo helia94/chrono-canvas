@@ -3,7 +3,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List, Tuple
 import httpx
 from openai import AsyncOpenAI
 
@@ -60,7 +60,6 @@ Be concise. Format: "Work Name" by Artist - brief reason"""
 
 def _parse_response(text: str, provider: str, query_type: str) -> FactCheckResponse:
     """Parse LLM response into structured format."""
-    # Simple parsing - extract the work name (first quoted string or first line)
     text = text.strip()
     
     # Try to find quoted work name
@@ -69,13 +68,12 @@ def _parse_response(text: str, provider: str, query_type: str) -> FactCheckRespo
         if len(parts) >= 2:
             art_name = parts[1]
             brief_reason = text.replace(f'"{art_name}"', '').strip()
-            # Clean up the reason
             brief_reason = brief_reason.lstrip(' -–—:').strip()
             return FactCheckResponse(
                 provider=provider,
                 query_type=query_type,
                 art_name=art_name,
-                brief_reason=brief_reason[:500],  # Limit length
+                brief_reason=brief_reason[:500],
                 success=True,
             )
     
@@ -94,7 +92,7 @@ def _parse_response(text: str, provider: str, query_type: str) -> FactCheckRespo
 
 
 class OpenAIProvider(LLMProvider):
-    """OpenAI GPT provider."""
+    """OpenAI GPT provider - using gpt-4o-mini (fast & cheap)."""
     
     def __init__(self):
         settings = get_settings()
@@ -107,7 +105,7 @@ class OpenAIProvider(LLMProvider):
     async def _query(self, prompt: str, query_type: str) -> FactCheckResponse:
         try:
             response = await self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o-mini",  # Fast & cheap: $0.15/1M input, $0.60/1M output
                 messages=[
                     {"role": "system", "content": "You are a concise art history expert. Give brief, factual answers."},
                     {"role": "user", "content": prompt},
@@ -137,7 +135,7 @@ class OpenAIProvider(LLMProvider):
 
 
 class PerplexityProvider(LLMProvider):
-    """Perplexity AI provider (uses OpenAI-compatible API)."""
+    """Perplexity AI provider - using sonar (fast online search)."""
     
     def __init__(self):
         settings = get_settings()
@@ -149,6 +147,15 @@ class PerplexityProvider(LLMProvider):
         return "perplexity"
     
     async def _query(self, prompt: str, query_type: str) -> FactCheckResponse:
+        if not self.api_key:
+            return FactCheckResponse(
+                provider=self.name,
+                query_type=query_type,
+                art_name="",
+                brief_reason="",
+                success=False,
+                error="No API key configured",
+            )
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
@@ -158,7 +165,7 @@ class PerplexityProvider(LLMProvider):
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "llama-3.1-sonar-small-128k-online",
+                        "model": "sonar",  # Fast online model
                         "messages": [
                             {"role": "system", "content": "You are a concise art history expert. Give brief, factual answers."},
                             {"role": "user", "content": prompt},
@@ -191,7 +198,7 @@ class PerplexityProvider(LLMProvider):
 
 
 class XAIProvider(LLMProvider):
-    """xAI Grok provider (uses OpenAI-compatible API)."""
+    """xAI Grok provider - using grok-2-latest (fast)."""
     
     def __init__(self):
         settings = get_settings()
@@ -203,6 +210,15 @@ class XAIProvider(LLMProvider):
         return "xai"
     
     async def _query(self, prompt: str, query_type: str) -> FactCheckResponse:
+        if not self.api_key:
+            return FactCheckResponse(
+                provider=self.name,
+                query_type=query_type,
+                art_name="",
+                brief_reason="",
+                success=False,
+                error="No API key configured",
+            )
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
@@ -212,7 +228,7 @@ class XAIProvider(LLMProvider):
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "grok-beta",
+                        "model": "grok-2-latest",  # Latest Grok model
                         "messages": [
                             {"role": "system", "content": "You are a concise art history expert. Give brief, factual answers."},
                             {"role": "user", "content": prompt},
@@ -248,7 +264,7 @@ async def query_all_providers(
     decade: str, 
     region: str, 
     art_form: str
-) -> tuple[list[FactCheckResponse], list[FactCheckResponse]]:
+) -> Tuple[List[FactCheckResponse], List[FactCheckResponse]]:
     """
     Query all providers in parallel for both popular and timeless.
     
@@ -269,7 +285,6 @@ async def query_all_providers(
     
     for i, result in enumerate(all_results):
         if isinstance(result, Exception):
-            # Create error response
             provider_name = providers[i % 3].name
             query_type = "popular" if i < 3 else "timeless"
             response = FactCheckResponse(
@@ -289,4 +304,3 @@ async def query_all_providers(
             timeless_responses.append(response)
     
     return popular_responses, timeless_responses
-
