@@ -51,20 +51,31 @@ A FastAPI backend for the ChronoCanvas art exploration application with LLM-powe
 ### 1. Prerequisites
 
 - Python 3.9+
+- [uv](https://github.com/astral-sh/uv) (fast Python package manager)
 - PostgreSQL database
 - API keys for: OpenAI, Anthropic (Claude), Perplexity, xAI
 
-### 2. Set up PostgreSQL
+### 2. Install uv
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or with Homebrew
+brew install uv
+```
+
+### 3. Set up PostgreSQL
 
 ```bash
 # Create database
 createdb chronocanvas
 
-# Or via psql
-psql -c "CREATE DATABASE chronocanvas;"
+# Or via Docker
+docker run --name chronocanvas-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=chronocanvas -p 5432:5432 -d postgres
 ```
 
-### 3. Configure Environment
+### 4. Configure Environment
 
 ```bash
 cd backend
@@ -72,22 +83,39 @@ cp .env.example .env
 # Edit .env with your API keys and database URL
 ```
 
-### 4. Install Dependencies
+### 5. Install Dependencies & Run
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
+cd backend
 
-### 5. Run the Server
+# Install dependencies (creates .venv automatically)
+uv sync
 
-```bash
-uvicorn main:app --reload --port 8000
+# Run development server with auto-reload
+uv run uvicorn main:app --reload --port 8000
 ```
 
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
+
+## Available Commands
+
+```bash
+# Development server with auto-reload
+uv run uvicorn main:app --reload --port 8000
+
+# Production server
+uv run uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Run tests
+uv run pytest
+
+# Lint code
+uv run ruff check .
+
+# Format code
+uv run ruff format .
+```
 
 ## API Endpoints
 
@@ -161,7 +189,7 @@ backend/
 ├── art_service.py    # Orchestrator tying it all together
 ├── models.py         # Pydantic models
 ├── data.py           # Configuration constants
-├── requirements.txt  # Python dependencies
+├── pyproject.toml    # Project config & dependencies (uv/hatch)
 └── .env.example      # Environment template
 ```
 
@@ -192,3 +220,17 @@ See [DEPLOYMENT.md](../DEPLOYMENT.md) for deployment options including Railway, 
 For production, you'll need:
 1. A PostgreSQL database (Supabase, Railway, Render, Neon, etc.)
 2. All four LLM API keys configured
+
+### Deploy with Docker
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY . .
+
+RUN pip install uv
+RUN uv sync --frozen
+
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
