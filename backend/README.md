@@ -1,186 +1,194 @@
 # ChronoCanvas Backend API
 
-A FastAPI backend for the ChronoCanvas art exploration application.
+A FastAPI backend for the ChronoCanvas art exploration application with LLM-powered fact-checking and PostgreSQL caching.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        API Request                               │
+│              (decade, region, art_form)                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Cache Layer (PostgreSQL)                    │
+│                   Check if data exists                           │
+└─────────────────────────────────────────────────────────────────┘
+                    │                       │
+               [Cache Hit]             [Cache Miss]
+                    │                       │
+                    ▼                       ▼
+              Return Data    ┌─────────────────────────────────────┐
+                             │    Query LLM Providers (Parallel)   │
+                             │  ┌─────────┬──────────┬─────────┐   │
+                             │  │ OpenAI  │Perplexity│   xAI   │   │
+                             │  │ (GPT-4) │ (Sonar)  │ (Grok)  │   │
+                             │  └────┬────┴────┬─────┴────┬────┘   │
+                             │       │         │          │        │
+                             │  2 queries each (popular + timeless)│
+                             └───────┼─────────┼──────────┼────────┘
+                                     │         │          │
+                                     ▼         ▼          ▼
+                             ┌─────────────────────────────────────┐
+                             │      Claude Consensus Layer         │
+                             │  - Majority vote for art selection  │
+                             │  - Claude judges if no majority     │
+                             │  - Writes friendly, engaging desc   │
+                             └─────────────────────────────────────┘
+                                              │
+                                              ▼
+                             ┌─────────────────────────────────────┐
+                             │        Cache Result in DB           │
+                             └─────────────────────────────────────┘
+                                              │
+                                              ▼
+                                        Return Data
+```
 
 ## Quick Start
 
-### Local Development
+### 1. Prerequisites
 
-1. **Create a virtual environment:**
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+- Python 3.9+
+- PostgreSQL database
+- API keys for: OpenAI, Anthropic (Claude), Perplexity, xAI
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2. Set up PostgreSQL
 
-3. **Run the server:**
-   ```bash
-   uvicorn main:app --reload --port 8000
-   ```
+```bash
+# Create database
+createdb chronocanvas
 
-4. **Access the API:**
-   - API: http://localhost:8000
-   - Docs: http://localhost:8000/docs
-   - Redoc: http://localhost:8000/redoc
+# Or via psql
+psql -c "CREATE DATABASE chronocanvas;"
+```
+
+### 3. Configure Environment
+
+```bash
+cd backend
+cp .env.example .env
+# Edit .env with your API keys and database URL
+```
+
+### 4. Install Dependencies
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 5. Run the Server
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+- API: http://localhost:8000
+- Docs: http://localhost:8000/docs
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | Health check |
-| GET | `/api/config` | Get available regions, art forms, and time periods |
-| GET | `/api/art` | Get art data with fallback (query params: `decade`, `region`, `artForm`) |
-| GET | `/api/art/exact` | Get art data exact match only |
+| GET | `/api/config` | Get available regions, art forms, time periods |
+| GET | `/api/art` | Get art data (uses cache + LLM) |
+| DELETE | `/api/cache` | Clear all cached data |
+| DELETE | `/api/cache/{decade}/{region}/{art_form}` | Invalidate specific entry |
 
-### Example Requests
+### Query Parameters for `/api/art`
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `decade` | Yes | Time period (e.g., "1920", "1960") |
+| `region` | Yes | Geographic region |
+| `artForm` | Yes | "Visual Arts", "Music", or "Literature" |
+
+### Example Request
 
 ```bash
-# Get configuration
-curl http://localhost:8000/api/config
-
-# Get art data
 curl "http://localhost:8000/api/art?decade=1920&region=Western%20Europe&artForm=Visual%20Arts"
 ```
 
-## Deployment Options
+### Example Response
 
-### Option 1: Railway (Recommended - Free Tier Available)
+```json
+{
+  "data": {
+    "decade": "1920",
+    "region": "Western Europe",
+    "artForm": "Visual Arts",
+    "popular": {
+      "name": "The Persistence of Memory",
+      "description": "Dalí's melting clocks became the ultimate fever dream of the art world—somehow making everyone question if their watch was lying to them. It's surrealism's greatest mic drop."
+    },
+    "timeless": {
+      "name": "Composition with Red, Blue and Yellow",
+      "description": "Mondrian stripped painting down to its bones—just lines and primary colors—and accidentally invented the aesthetic that would launch a thousand IKEA products."
+    }
+  },
+  "found": true
+}
+```
 
-Railway offers the easiest deployment with a free tier.
+## Environment Variables
 
-1. **Create account at [railway.app](https://railway.app)**
-
-2. **Deploy from GitHub:**
-   - Connect your GitHub repository
-   - Select the `backend` folder as the root directory
-   - Railway auto-detects Python and deploys
-
-3. **Or deploy via CLI:**
-   ```bash
-   npm install -g @railway/cli
-   railway login
-   railway init
-   railway up
-   ```
-
-4. **Set environment variables in Railway dashboard:**
-   - `PORT` (Railway sets this automatically)
-   - `CORS_ORIGINS` (your frontend URL)
-
-**Pricing:** Free tier includes $5/month credit, ~500 hours of runtime
-
----
-
-### Option 2: Render (Free Tier Available)
-
-1. **Create account at [render.com](https://render.com)**
-
-2. **Create a new Web Service:**
-   - Connect your GitHub repo
-   - Set root directory to `backend`
-   - Build command: `pip install -r requirements.txt`
-   - Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-
-3. **Configure:**
-   - Add environment variables
-   - Set instance type to "Free"
-
-**Pricing:** Free tier spins down after inactivity (cold starts ~30s)
-
----
-
-### Option 3: Fly.io (Free Tier Available)
-
-1. **Install flyctl:**
-   ```bash
-   curl -L https://fly.io/install.sh | sh
-   ```
-
-2. **Deploy:**
-   ```bash
-   cd backend
-   fly launch
-   fly deploy
-   ```
-
-**Pricing:** Free tier includes 3 shared-cpu-1x VMs
-
----
-
-### Option 4: PythonAnywhere (Free Tier Available)
-
-Good for simple Python apps without complex dependencies.
-
-1. **Create account at [pythonanywhere.com](https://www.pythonanywhere.com)**
-
-2. **Upload your code** via their web interface or Git
-
-3. **Configure WSGI** to point to your FastAPI app
-
-**Pricing:** Free tier with limitations (one web app, limited CPU)
-
----
-
-### Option 5: Vercel (Serverless)
-
-Deploy as serverless functions using Vercel's Python runtime.
-
-1. **Create `vercel.json` in backend folder:**
-   ```json
-   {
-     "builds": [
-       { "src": "main.py", "use": "@vercel/python" }
-     ],
-     "routes": [
-       { "src": "/(.*)", "dest": "main.py" }
-     ]
-   }
-   ```
-
-2. **Deploy:**
-   ```bash
-   vercel
-   ```
-
-**Note:** Requires some adaptation for serverless (stateless).
-
----
-
-## Frontend Integration
-
-After deploying, update the frontend environment variable:
-
-1. **Create `.env` file in project root:**
-   ```
-   VITE_API_URL=https://your-deployed-backend-url.com
-   ```
-
-2. **For Lovable deployment:**
-   - Set the `VITE_API_URL` environment variable in Lovable's settings
-   - The frontend will automatically use this URL
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `ANTHROPIC_API_KEY` | Yes | Anthropic (Claude) API key |
+| `PERPLEXITY_API_KEY` | Yes | Perplexity API key |
+| `XAI_API_KEY` | Yes | xAI (Grok) API key |
+| `HOST` | No | Server host (default: 0.0.0.0) |
+| `PORT` | No | Server port (default: 8000) |
+| `DEBUG` | No | Debug mode (default: true) |
+| `CORS_ORIGINS` | No | Comma-separated allowed origins |
 
 ## Project Structure
 
 ```
 backend/
 ├── main.py           # FastAPI application entry point
-├── models.py         # Pydantic models for request/response
-├── data.py           # Mock data (to be replaced with DB logic)
+├── config.py         # Settings/configuration
+├── database.py       # PostgreSQL connection and models
+├── cache.py          # Cache layer (read/write from DB)
+├── llm_providers.py  # LLM provider classes (OpenAI, Perplexity, xAI)
+├── consensus.py      # Claude consensus/synthesis layer
+├── art_service.py    # Orchestrator tying it all together
+├── models.py         # Pydantic models
+├── data.py           # Configuration constants
 ├── requirements.txt  # Python dependencies
-├── Procfile          # For Heroku/Railway deployment
-├── runtime.txt       # Python version specification
-└── README.md         # This file
+└── .env.example      # Environment template
 ```
 
-## Future Improvements
+## How the LLM Pipeline Works
 
-- [ ] Add database integration (PostgreSQL/SQLite)
-- [ ] Implement caching for API responses
-- [ ] Add authentication for admin endpoints
-- [ ] Integrate with external art APIs (Wikipedia, Artsy, etc.)
+1. **Parallel Fact-Checking**: 3 providers (OpenAI, Perplexity, xAI) are queried in parallel, each answering:
+   - "What was the most popular [art form] from [region] in the [decade]s?"
+   - "What was the most timeless [art form] from [region] in the [decade]s?"
 
+2. **Consensus**: 
+   - If 2+ providers agree on an artwork, that's the majority choice
+   - If no majority, Claude uses judgment to pick the best answer
+
+3. **Final Writing**: Claude synthesizes all responses and writes engaging, casual descriptions focusing on surprising/juicy details
+
+4. **Caching**: Results are stored in PostgreSQL for instant retrieval on subsequent requests
+
+## Error Handling
+
+- Minimum 1/3 providers must succeed for each query type
+- If LLM pipeline fails, API returns `found: false`
+- Database failures are logged but don't crash the server
+
+## Deployment
+
+See [DEPLOYMENT.md](../DEPLOYMENT.md) for deployment options including Railway, Render, and Fly.io.
+
+For production, you'll need:
+1. A PostgreSQL database (Supabase, Railway, Render, Neon, etc.)
+2. All four LLM API keys configured
