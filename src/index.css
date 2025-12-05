@@ -226,3 +226,12 @@
     transition-duration: 400ms;
   }
 }
+
+/* Globe tooltip styling */
+.globe-tooltip {
+  @apply font-display text-sm px-3 py-1 rounded-sm;
+  background: hsl(40 33% 93% / 0.95);
+  color: hsl(0 0% 17%);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid hsl(40 15% 80%);
+}
