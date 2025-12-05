@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import DecadeSlider from "@/components/DecadeSlider";
-import WorldMap from "@/components/WorldMap";
+import PaperGlobe from "@/components/PaperGlobe";
 import ArtFormSelector from "@/components/ArtFormSelector";
 import ArtDisplay from "@/components/ArtDisplay";
 import { type Decade, type Region, type ArtForm } from "@/data/mockData";
@@ -25,7 +25,7 @@ const Index = () => {
         </section>
 
         <section className="mb-4">
-          <WorldMap
+          <PaperGlobe
             selectedRegion={selectedRegion}
             onRegionChange={setSelectedRegion}
           />
