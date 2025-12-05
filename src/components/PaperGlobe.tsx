@@ -14,93 +14,125 @@ interface PaperGlobeProps {
   onRegionChange: (region: Region) => void;
 }
 
-// Map ISO country codes to regions
+// Map country names to regions (world-atlas uses NAME property)
 const countryToRegion: Record<string, Region> = {
   // Western Europe
-  "FRA": "Western Europe", "DEU": "Western Europe", "GBR": "Western Europe",
-  "ITA": "Western Europe", "ESP": "Western Europe", "PRT": "Western Europe",
-  "NLD": "Western Europe", "BEL": "Western Europe", "CHE": "Western Europe",
-  "AUT": "Western Europe", "IRL": "Western Europe", "LUX": "Western Europe",
+  "France": "Western Europe", "Germany": "Western Europe", "United Kingdom": "Western Europe",
+  "Italy": "Western Europe", "Spain": "Western Europe", "Portugal": "Western Europe",
+  "Netherlands": "Western Europe", "Belgium": "Western Europe", "Switzerland": "Western Europe",
+  "Austria": "Western Europe", "Ireland": "Western Europe", "Luxembourg": "Western Europe",
+  "Denmark": "Western Europe", "Sweden": "Western Europe", "Norway": "Western Europe",
+  "Finland": "Western Europe", "Iceland": "Western Europe", "Greece": "Western Europe",
   // Eastern Europe
-  "POL": "Eastern Europe", "CZE": "Eastern Europe", "HUN": "Eastern Europe",
-  "ROU": "Eastern Europe", "BGR": "Eastern Europe", "UKR": "Eastern Europe",
-  "RUS": "Eastern Europe", "BLR": "Eastern Europe", "SRB": "Eastern Europe",
-  "HRV": "Eastern Europe", "SVK": "Eastern Europe", "SVN": "Eastern Europe",
+  "Poland": "Eastern Europe", "Czechia": "Eastern Europe", "Hungary": "Eastern Europe",
+  "Romania": "Eastern Europe", "Bulgaria": "Eastern Europe", "Ukraine": "Eastern Europe",
+  "Russia": "Eastern Europe", "Belarus": "Eastern Europe", "Serbia": "Eastern Europe",
+  "Croatia": "Eastern Europe", "Slovakia": "Eastern Europe", "Slovenia": "Eastern Europe",
+  "Lithuania": "Eastern Europe", "Latvia": "Eastern Europe", "Estonia": "Eastern Europe",
+  "Moldova": "Eastern Europe", "Bosnia and Herzegovina": "Eastern Europe",
+  "North Macedonia": "Eastern Europe", "Albania": "Eastern Europe", "Montenegro": "Eastern Europe",
   // North America
-  "USA": "North America", "CAN": "North America", "MEX": "North America",
+  "United States of America": "North America", "Canada": "North America", "Mexico": "North America",
   // Latin America
-  "BRA": "Latin America", "ARG": "Latin America", "CHL": "Latin America",
-  "COL": "Latin America", "PER": "Latin America", "VEN": "Latin America",
-  "ECU": "Latin America", "BOL": "Latin America", "PRY": "Latin America",
-  "URY": "Latin America", "GUY": "Latin America", "SUR": "Latin America",
-  "CUB": "Latin America", "DOM": "Latin America", "HTI": "Latin America",
-  "JAM": "Latin America", "PAN": "Latin America", "CRI": "Latin America",
-  "NIC": "Latin America", "HND": "Latin America", "SLV": "Latin America",
-  "GTM": "Latin America", "BLZ": "Latin America",
+  "Brazil": "Latin America", "Argentina": "Latin America", "Chile": "Latin America",
+  "Colombia": "Latin America", "Peru": "Latin America", "Venezuela": "Latin America",
+  "Ecuador": "Latin America", "Bolivia": "Latin America", "Paraguay": "Latin America",
+  "Uruguay": "Latin America", "Guyana": "Latin America", "Suriname": "Latin America",
+  "Cuba": "Latin America", "Dominican Republic": "Latin America", "Haiti": "Latin America",
+  "Jamaica": "Latin America", "Panama": "Latin America", "Costa Rica": "Latin America",
+  "Nicaragua": "Latin America", "Honduras": "Latin America", "El Salvador": "Latin America",
+  "Guatemala": "Latin America", "Belize": "Latin America", "Puerto Rico": "Latin America",
   // East Asia
-  "CHN": "East Asia", "JPN": "East Asia", "KOR": "East Asia",
-  "PRK": "East Asia", "TWN": "East Asia", "MNG": "East Asia",
-  "VNM": "East Asia", "THA": "East Asia", "MMR": "East Asia",
-  "KHM": "East Asia", "LAO": "East Asia", "MYS": "East Asia",
-  "SGP": "East Asia", "IDN": "East Asia", "PHL": "East Asia",
+  "China": "East Asia", "Japan": "East Asia", "South Korea": "East Asia",
+  "North Korea": "East Asia", "Taiwan": "East Asia", "Mongolia": "East Asia",
+  "Vietnam": "East Asia", "Thailand": "East Asia", "Myanmar": "East Asia",
+  "Cambodia": "East Asia", "Laos": "East Asia", "Malaysia": "East Asia",
+  "Singapore": "East Asia", "Indonesia": "East Asia", "Philippines": "East Asia",
+  "India": "East Asia", "Bangladesh": "East Asia", "Pakistan": "East Asia",
+  "Nepal": "East Asia", "Sri Lanka": "East Asia", "Afghanistan": "East Asia",
+  "Kazakhstan": "East Asia", "Uzbekistan": "East Asia", "Turkmenistan": "East Asia",
+  "Kyrgyzstan": "East Asia", "Tajikistan": "East Asia",
   // Africa & Middle East
-  "EGY": "Africa & Middle East", "ZAF": "Africa & Middle East", "NGA": "Africa & Middle East",
-  "KEN": "Africa & Middle East", "ETH": "Africa & Middle East", "TZA": "Africa & Middle East",
-  "MAR": "Africa & Middle East", "DZA": "Africa & Middle East", "TUN": "Africa & Middle East",
-  "SAU": "Africa & Middle East", "ARE": "Africa & Middle East", "ISR": "Africa & Middle East",
-  "IRN": "Africa & Middle East", "IRQ": "Africa & Middle East", "TUR": "Africa & Middle East",
-  "SYR": "Africa & Middle East", "JOR": "Africa & Middle East", "LBN": "Africa & Middle East",
-  "GHA": "Africa & Middle East", "SEN": "Africa & Middle East", "CIV": "Africa & Middle East",
-  "CMR": "Africa & Middle East", "AGO": "Africa & Middle East", "MOZ": "Africa & Middle East",
-  "ZWE": "Africa & Middle East", "UGA": "Africa & Middle East", "SDN": "Africa & Middle East",
-  "LBY": "Africa & Middle East", "COD": "Africa & Middle East", "ZMB": "Africa & Middle East",
+  "Egypt": "Africa & Middle East", "South Africa": "Africa & Middle East", "Nigeria": "Africa & Middle East",
+  "Kenya": "Africa & Middle East", "Ethiopia": "Africa & Middle East", "Tanzania": "Africa & Middle East",
+  "Morocco": "Africa & Middle East", "Algeria": "Africa & Middle East", "Tunisia": "Africa & Middle East",
+  "Saudi Arabia": "Africa & Middle East", "United Arab Emirates": "Africa & Middle East", "Israel": "Africa & Middle East",
+  "Iran": "Africa & Middle East", "Iraq": "Africa & Middle East", "Turkey": "Africa & Middle East",
+  "Syria": "Africa & Middle East", "Jordan": "Africa & Middle East", "Lebanon": "Africa & Middle East",
+  "Ghana": "Africa & Middle East", "Senegal": "Africa & Middle East", "Ivory Coast": "Africa & Middle East",
+  "Cameroon": "Africa & Middle East", "Angola": "Africa & Middle East", "Mozambique": "Africa & Middle East",
+  "Zimbabwe": "Africa & Middle East", "Uganda": "Africa & Middle East", "Sudan": "Africa & Middle East",
+  "Libya": "Africa & Middle East", "Democratic Republic of the Congo": "Africa & Middle East", 
+  "Zambia": "Africa & Middle East", "Madagascar": "Africa & Middle East", "Mali": "Africa & Middle East",
+  "Niger": "Africa & Middle East", "Chad": "Africa & Middle East", "Somalia": "Africa & Middle East",
+  "Yemen": "Africa & Middle East", "Oman": "Africa & Middle East", "Kuwait": "Africa & Middle East",
+  "Qatar": "Africa & Middle East", "Bahrain": "Africa & Middle East", "Namibia": "Africa & Middle East",
+  "Botswana": "Africa & Middle East", "Rwanda": "Africa & Middle East", "Burundi": "Africa & Middle East",
+  "Malawi": "Africa & Middle East", "Republic of the Congo": "Africa & Middle East",
+  "Central African Republic": "Africa & Middle East", "Gabon": "Africa & Middle East",
+  "Equatorial Guinea": "Africa & Middle East", "Eritrea": "Africa & Middle East",
+  "Djibouti": "Africa & Middle East", "South Sudan": "Africa & Middle East",
+  "Western Sahara": "Africa & Middle East", "Mauritania": "Africa & Middle East",
+  "Burkina Faso": "Africa & Middle East", "Togo": "Africa & Middle East", "Benin": "Africa & Middle East",
+  "Guinea": "Africa & Middle East", "Guinea-Bissau": "Africa & Middle East", "Sierra Leone": "Africa & Middle East",
+  "Liberia": "Africa & Middle East", "Gambia": "Africa & Middle East", "Cape Verde": "Africa & Middle East",
+  "Côte d'Ivoire": "Africa & Middle East", "eSwatini": "Africa & Middle East", "Lesotho": "Africa & Middle East",
 };
 
 const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
   const [hoveredRegion, setHoveredRegion] = useState<Region | null>(null);
   const [rotation, setRotation] = useState<[number, number]>([0, 0]);
   const [isDragging, setIsDragging] = useState(false);
-  const lastPosition = useRef<{ x: number; y: number } | null>(null);
+  const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
+  const hasMoved = useRef(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsDragging(true);
-    lastPosition.current = { x: e.clientX, y: e.clientY };
+    hasMoved.current = false;
+    dragStartPosition.current = { x: e.clientX, y: e.clientY };
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || !lastPosition.current) return;
+    if (!isDragging || !dragStartPosition.current) return;
     
-    const deltaX = e.clientX - lastPosition.current.x;
-    const deltaY = e.clientY - lastPosition.current.y;
+    const deltaX = e.clientX - dragStartPosition.current.x;
+    const deltaY = e.clientY - dragStartPosition.current.y;
     
-    setRotation(prev => [
-      prev[0] + deltaX * 0.5,
-      Math.max(-60, Math.min(60, prev[1] - deltaY * 0.5))
-    ]);
+    // Only count as dragging if moved more than 3 pixels
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+      hasMoved.current = true;
+    }
     
-    lastPosition.current = { x: e.clientX, y: e.clientY };
+    if (hasMoved.current) {
+      setRotation(prev => [
+        prev[0] + (e.movementX || 0) * 0.5,
+        Math.max(-60, Math.min(60, prev[1] - (e.movementY || 0) * 0.5))
+      ]);
+    }
   }, [isDragging]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-    lastPosition.current = null;
+    dragStartPosition.current = null;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     setIsDragging(false);
-    lastPosition.current = null;
+    dragStartPosition.current = null;
   }, []);
 
-  const getCountryFill = (countryCode: string) => {
-    const region = countryToRegion[countryCode];
+  const getCountryFill = (countryName: string) => {
+    const region = countryToRegion[countryName];
     if (region === selectedRegion) return "hsl(43, 80%, 46%)";
     if (region === hoveredRegion) return "hsl(43, 80%, 46%, 0.3)";
     return "transparent";
   };
 
-  const handleClick = (countryCode: string) => {
-    if (isDragging) return;
-    const region = countryToRegion[countryCode];
+  const handleCountryClick = (countryName: string) => {
+    // Only handle click if we didn't drag
+    if (hasMoved.current) return;
+    
+    const region = countryToRegion[countryName];
     if (region) {
       onRegionChange(region);
     }
@@ -125,7 +157,7 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
         {/* Drag hint */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 opacity-50">
           <span className="font-body text-xs text-muted-foreground">
-            Drag to rotate
+            Drag to rotate • Click to select
           </span>
         </div>
         
@@ -138,7 +170,7 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
           }}
           width={300}
           height={300}
-          style={{ width: "100%", height: "auto", pointerEvents: isDragging ? "none" : "auto" }}
+          style={{ width: "100%", height: "auto" }}
         >
           {/* Subtle graticule lines */}
           <Graticule stroke="hsl(var(--foreground) / 0.08)" strokeWidth={0.4} />
@@ -146,29 +178,28 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
           <Geographies geography={geoUrl}>
             {({ geographies }) =>
               geographies.map((geo) => {
-                const code = geo.properties.ISO_A3 || geo.id;
-                const region = countryToRegion[code];
+                const countryName = geo.properties.name;
+                const region = countryToRegion[countryName];
                 
                 return (
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    onClick={() => handleClick(code)}
+                    onClick={() => handleCountryClick(countryName)}
                     onMouseEnter={() => {
-                      if (region && !isDragging) setHoveredRegion(region);
-                      document.body.style.cursor = isDragging ? "grabbing" : region ? "pointer" : "grab";
+                      if (region && !hasMoved.current) setHoveredRegion(region);
                     }}
                     onMouseLeave={() => {
                       setHoveredRegion(null);
-                      document.body.style.cursor = isDragging ? "grabbing" : "grab";
                     }}
                     style={{
                       default: {
-                        fill: getCountryFill(code),
+                        fill: getCountryFill(countryName),
                         stroke: "hsl(var(--foreground))",
                         strokeWidth: 0.5,
                         outline: "none",
-                        transition: "fill 0.3s ease"
+                        transition: "fill 0.3s ease",
+                        cursor: region ? "pointer" : "grab"
                       },
                       hover: {
                         fill: region === selectedRegion 
@@ -178,7 +209,8 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
                             : "hsl(var(--foreground) / 0.05)",
                         stroke: "hsl(var(--foreground))",
                         strokeWidth: 0.5,
-                        outline: "none"
+                        outline: "none",
+                        cursor: region ? "pointer" : "grab"
                       },
                       pressed: {
                         fill: "hsl(43, 80%, 46%)",
