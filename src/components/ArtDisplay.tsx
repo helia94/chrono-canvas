@@ -20,25 +20,23 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
       const data = getDefaultOrArtData(decade, region, artForm);
       setArtData(data);
       setIsLoading(false);
-    }, 600);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [decade, region, artForm]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-4">
-      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-        <ArtCard
-          title="Most Popular of the Decade"
-          entry={artData?.popular || null}
-          isLoading={isLoading}
-        />
-        <ArtCard
-          title="Most Timeless"
-          entry={artData?.timeless || null}
-          isLoading={isLoading}
-        />
-      </div>
+    <div className="w-full max-w-md px-2">
+      <ArtCard
+        title="Most Popular of the Decade"
+        entry={artData?.popular || null}
+        isLoading={isLoading}
+      />
+      <ArtCard
+        title="Most Timeless"
+        entry={artData?.timeless || null}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

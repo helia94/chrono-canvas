@@ -14,17 +14,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-6xl mx-auto px-2">
+      <main className="max-w-5xl mx-auto px-4">
         <Header />
         
-        <section>
+        <section className="mb-2">
           <DecadeSlider
             selectedDecade={selectedDecade}
             onDecadeChange={setSelectedDecade}
           />
         </section>
 
-        <section className="flex flex-col lg:flex-row items-center justify-center gap-4">
+        <section className="flex flex-col lg:flex-row items-start justify-center gap-6 lg:gap-10">
           <div className="flex-shrink-0">
             <PaperGlobe
               selectedRegion={selectedRegion}
@@ -32,7 +32,7 @@ const Index = () => {
             />
           </div>
           
-          <div className="flex-1 max-w-xl">
+          <div className="flex-1 max-w-md">
             <ArtFormSelector
               selectedArtForm={selectedArtForm}
               onArtFormChange={setSelectedArtForm}
