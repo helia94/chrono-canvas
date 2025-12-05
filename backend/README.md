@@ -68,11 +68,15 @@ brew install uv
 ### 3. Set up PostgreSQL
 
 ```bash
-# Create database
-createdb chronocanvas
+# Using docker compose (recommended)
+cd backend
+docker compose up -d
 
-# Or via Docker
+# Or manually with Docker
 docker run --name chronocanvas-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=chronocanvas -p 5432:5432 -d postgres
+
+# Or create database locally
+createdb chronocanvas
 ```
 
 ### 4. Configure Environment
