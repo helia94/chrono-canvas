@@ -22,14 +22,12 @@ const DecadeSlider = ({ selectedDecade, onDecadeChange }: DecadeSliderProps) => 
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-6 py-3">
-      {/* Year display with ochre lines */}
-      <div className="flex items-center justify-center gap-4 mb-3">
-        <div className="flex-1 h-0.5 bg-primary" />
-        <span className="font-display text-2xl font-light text-foreground px-4">
+    <div className="w-full max-w-3xl mx-auto px-6 py-4">
+      {/* Selected period label */}
+      <div className="text-center mb-4">
+        <span className="font-display text-2xl font-light text-foreground" key={selectedDecade}>
           {formatLabel(selectedDecade)}
         </span>
-        <div className="flex-1 h-0.5 bg-primary" />
       </div>
 
       {/* Slider */}

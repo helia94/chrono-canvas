@@ -3,8 +3,7 @@ import {
   ComposableMap,
   Geographies,
   Geography,
-  Graticule,
-  Sphere
+  Graticule
 } from "react-simple-maps";
 import { type Region } from "@/data/mockData";
 
@@ -126,7 +125,7 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
     const region = countryToRegion[countryName];
     if (region === selectedRegion) return "hsl(43, 80%, 46%)";
     if (region === hoveredRegion) return "hsl(43, 80%, 46%, 0.3)";
-    return "hsl(43, 80%, 46%)"; // All land is ochre
+    return "transparent";
   };
 
   const handleCountryClick = (countryName: string) => {
@@ -140,43 +139,47 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto px-2">
+    <div className="w-full max-w-md mx-auto px-4 py-2">
       <div 
-        className="globe-frame relative cursor-grab active:cursor-grabbing"
+        className="paper-globe-container relative cursor-grab active:cursor-grabbing"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
       >
+        {/* Region label */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+          <span className="font-display text-sm text-primary">
+            {selectedRegion}
+          </span>
+        </div>
+
+        {/* Drag hint */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 opacity-50">
+          <span className="font-body text-xs text-muted-foreground">
+            Drag to rotate • Click to select
+          </span>
+        </div>
+        
         <ComposableMap
           projection="geoOrthographic"
           projectionConfig={{
-            scale: 130,
+            scale: 140,
             center: [0, 0],
             rotate: [-rotation[0], -rotation[1], 0]
           }}
-          width={280}
-          height={280}
+          width={300}
+          height={300}
           style={{ width: "100%", height: "auto" }}
         >
-          {/* Sphere background */}
-          <Sphere 
-            id="sphere" 
-            fill="hsl(40, 33%, 90%)" 
-            stroke="hsl(0, 0%, 17%)" 
-            strokeWidth={0.5}
-          />
-          
-          {/* Graticule lines */}
-          <Graticule stroke="hsl(0, 0%, 17%, 0.15)" strokeWidth={0.3} />
+          {/* Subtle graticule lines */}
+          <Graticule stroke="hsl(var(--foreground) / 0.08)" strokeWidth={0.4} />
           
           <Geographies geography={geoUrl}>
             {({ geographies }) =>
               geographies.map((geo) => {
                 const countryName = geo.properties.name;
                 const region = countryToRegion[countryName];
-                const isSelected = region === selectedRegion;
-                const isHovered = region === hoveredRegion;
                 
                 return (
                   <Geography
@@ -192,24 +195,26 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
                     style={{
                       default: {
                         fill: getCountryFill(countryName),
-                        stroke: "hsl(0, 0%, 17%)",
-                        strokeWidth: isSelected ? 1 : 0.3,
+                        stroke: "hsl(var(--foreground))",
+                        strokeWidth: 0.5,
                         outline: "none",
-                        transition: "stroke-width 0.3s ease",
-                        cursor: region ? "pointer" : "grab",
-                        opacity: isSelected ? 1 : 0.7
+                        transition: "fill 0.3s ease",
+                        cursor: region ? "pointer" : "grab"
                       },
                       hover: {
-                        fill: "hsl(43, 80%, 46%)",
-                        stroke: "hsl(0, 0%, 17%)",
-                        strokeWidth: 1,
+                        fill: region === selectedRegion 
+                          ? "hsl(43, 80%, 46%)" 
+                          : region 
+                            ? "hsl(43, 80%, 46%, 0.4)" 
+                            : "hsl(var(--foreground) / 0.05)",
+                        stroke: "hsl(var(--foreground))",
+                        strokeWidth: 0.5,
                         outline: "none",
-                        cursor: region ? "pointer" : "grab",
-                        opacity: 1
+                        cursor: region ? "pointer" : "grab"
                       },
                       pressed: {
                         fill: "hsl(43, 80%, 46%)",
-                        stroke: "hsl(0, 0%, 17%)",
+                        stroke: "hsl(var(--foreground))",
                         outline: "none"
                       }
                     }}
@@ -219,13 +224,6 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
             }
           </Geographies>
         </ComposableMap>
-
-        {/* Region label at bottom */}
-        <div className="absolute bottom-3 left-3">
-          <span className="font-display text-base text-primary">
-            {selectedRegion}
-          </span>
-        </div>
       </div>
     </div>
   );
