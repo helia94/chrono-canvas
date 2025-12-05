@@ -1,12 +1,51 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import Header from "@/components/Header";
+import DecadeSlider from "@/components/DecadeSlider";
+import WorldMap from "@/components/WorldMap";
+import ArtFormSelector from "@/components/ArtFormSelector";
+import ArtDisplay from "@/components/ArtDisplay";
+import { type Decade, type Region, type ArtForm } from "@/data/mockData";
 
 const Index = () => {
+  // Default to 1920s, Western Europe, Visual Arts as specified
+  const [selectedDecade, setSelectedDecade] = useState<Decade>("1920");
+  const [selectedRegion, setSelectedRegion] = useState<Region>("Western Europe");
+  const [selectedArtForm, setSelectedArtForm] = useState<ArtForm>("Visual Arts");
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <main className="max-w-7xl mx-auto">
+        <Header />
+        
+        <section className="mb-8">
+          <DecadeSlider
+            selectedDecade={selectedDecade}
+            onDecadeChange={setSelectedDecade}
+          />
+        </section>
+
+        <section className="mb-4">
+          <WorldMap
+            selectedRegion={selectedRegion}
+            onRegionChange={setSelectedRegion}
+          />
+        </section>
+
+        <section className="mb-8">
+          <ArtFormSelector
+            selectedArtForm={selectedArtForm}
+            onArtFormChange={setSelectedArtForm}
+          />
+        </section>
+
+        <section className="pb-20">
+          <ArtDisplay
+            decade={selectedDecade}
+            region={selectedRegion}
+            artForm={selectedArtForm}
+          />
+        </section>
+      </main>
     </div>
   );
 };
