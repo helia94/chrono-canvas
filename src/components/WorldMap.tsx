@@ -1,4 +1,4 @@
-import { type Region } from "@/data/mockData";
+import { type Region } from "@/lib/api";
 
 interface WorldMapProps {
   selectedRegion: Region;

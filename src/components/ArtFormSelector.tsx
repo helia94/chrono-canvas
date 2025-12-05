@@ -1,11 +1,12 @@
-import { artForms, type ArtForm } from "@/data/mockData";
+import { type ArtForm } from "@/lib/api";
 
 interface ArtFormSelectorProps {
+  artForms: ArtForm[];
   selectedArtForm: ArtForm;
   onArtFormChange: (artForm: ArtForm) => void;
 }
 
-const ArtFormSelector = ({ selectedArtForm, onArtFormChange }: ArtFormSelectorProps) => {
+const ArtFormSelector = ({ artForms, selectedArtForm, onArtFormChange }: ArtFormSelectorProps) => {
   return (
     <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 px-4 py-2">
       {artForms.map((artForm) => (

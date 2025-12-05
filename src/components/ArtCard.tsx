@@ -1,4 +1,4 @@
-import { type ArtEntry } from "@/data/mockData";
+import { type ArtEntry } from "@/lib/api";
 
 interface ArtCardProps {
   title: string;

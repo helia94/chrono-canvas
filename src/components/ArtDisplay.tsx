@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { getDefaultOrArtData, type Decade, type Region, type ArtForm, type ArtData } from "@/data/mockData";
+import { fetchArtData, type ArtData, type Region, type ArtForm, type TimePeriod } from "@/lib/api";
 import ArtCard from "./ArtCard";
 
 interface ArtDisplayProps {
-  decade: Decade;
+  decade: TimePeriod;
   region: Region;
   artForm: ArtForm;
 }
@@ -13,16 +13,34 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
   const [artData, setArtData] = useState<ArtData | null>(null);
 
   useEffect(() => {
+    let isCancelled = false;
     setIsLoading(true);
     
-    // Simulate loading delay for smooth transition
-    const timer = setTimeout(() => {
-      const data = getDefaultOrArtData(decade, region, artForm);
-      setArtData(data);
-      setIsLoading(false);
-    }, 600);
+    const loadData = async () => {
+      try {
+        const response = await fetchArtData(decade, region, artForm);
+        if (!isCancelled) {
+          setArtData(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch art data:", error);
+        if (!isCancelled) {
+          setArtData(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-    return () => clearTimeout(timer);
+    // Add small delay for smoother transition
+    const timer = setTimeout(loadData, 300);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
   }, [decade, region, artForm]);
 
   return (

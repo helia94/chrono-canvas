@@ -1,12 +1,13 @@
-import { timePeriods, type TimePeriod } from "@/data/mockData";
+import { type TimePeriod } from "@/lib/api";
 import { Slider } from "@/components/ui/slider";
 
 interface DecadeSliderProps {
+  timePeriods: TimePeriod[];
   selectedDecade: TimePeriod;
   onDecadeChange: (decade: TimePeriod) => void;
 }
 
-const DecadeSlider = ({ selectedDecade, onDecadeChange }: DecadeSliderProps) => {
+const DecadeSlider = ({ timePeriods, selectedDecade, onDecadeChange }: DecadeSliderProps) => {
   const currentIndex = timePeriods.indexOf(selectedDecade);
   
   const handleSliderChange = (value: number[]) => {
@@ -33,7 +34,7 @@ const DecadeSlider = ({ selectedDecade, onDecadeChange }: DecadeSliderProps) => 
       {/* Slider */}
       <div className="px-2">
         <Slider
-          value={[currentIndex]}
+          value={[currentIndex >= 0 ? currentIndex : 0]}
           onValueChange={handleSliderChange}
           max={timePeriods.length - 1}
           min={0}
