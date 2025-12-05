@@ -107,7 +107,7 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-8 py-8">
+    <div className="w-full max-w-md mx-auto px-4 py-2">
       <div 
         className="paper-globe-container relative cursor-grab active:cursor-grabbing"
         onMouseDown={handleMouseDown}
@@ -132,12 +132,12 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
         <ComposableMap
           projection="geoOrthographic"
           projectionConfig={{
-            scale: 180,
+            scale: 140,
             center: [0, 0],
             rotate: [-rotation[0], -rotation[1], 0]
           }}
-          width={400}
-          height={400}
+          width={300}
+          height={300}
           style={{ width: "100%", height: "auto", pointerEvents: isDragging ? "none" : "auto" }}
         >
           {/* Subtle graticule lines */}

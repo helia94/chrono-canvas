@@ -26,8 +26,8 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
   }, [decade, region, artForm]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-8 py-12">
-      <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+    <div className="w-full max-w-4xl mx-auto px-4 py-4">
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
         <ArtCard
           title="Most Popular of the Decade"
           entry={artData?.popular || null}

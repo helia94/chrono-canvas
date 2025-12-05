@@ -8,12 +8,12 @@ interface ArtCardProps {
 
 const ArtCard = ({ title, entry, isLoading }: ArtCardProps) => {
   return (
-    <div className="paper-card p-8 md:p-10 min-h-[280px] flex flex-col paper-fold-enter">
+    <div className="paper-card p-4 md:p-5 min-h-[180px] flex flex-col paper-fold-enter">
       {/* Ochre accent line */}
-      <div className="w-12 h-0.5 bg-primary mb-6" />
+      <div className="w-8 h-0.5 bg-primary mb-3" />
       
       {/* Card title */}
-      <h3 className="font-display text-sm uppercase tracking-widest text-muted-foreground mb-6">
+      <h3 className="font-display text-xs uppercase tracking-widest text-muted-foreground mb-3">
         {title}
       </h3>
 
@@ -23,17 +23,17 @@ const ArtCard = ({ title, entry, isLoading }: ArtCardProps) => {
         </div>
       ) : entry ? (
         <div className="flex-1 flex flex-col">
-          <h4 className="font-display text-xl md:text-2xl font-light text-foreground mb-4 leading-relaxed">
+          <h4 className="font-display text-base md:text-lg font-light text-foreground mb-2 leading-snug">
             {entry.name}
           </h4>
-          <p className="font-body text-sm text-muted-foreground leading-relaxed">
+          <p className="font-body text-xs text-muted-foreground leading-relaxed line-clamp-4">
             {entry.description}
           </p>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
-          <p className="font-body text-sm text-muted-foreground italic">
-            No data available for this combination
+          <p className="font-body text-xs text-muted-foreground italic">
+            No data available
           </p>
         </div>
       )}

@@ -4,46 +4,45 @@ import DecadeSlider from "@/components/DecadeSlider";
 import PaperGlobe from "@/components/PaperGlobe";
 import ArtFormSelector from "@/components/ArtFormSelector";
 import ArtDisplay from "@/components/ArtDisplay";
-import { type Decade, type Region, type ArtForm } from "@/data/mockData";
+import { type TimePeriod, type Region, type ArtForm } from "@/data/mockData";
 
 const Index = () => {
   // Default to 1920s, Western Europe, Visual Arts as specified
-  const [selectedDecade, setSelectedDecade] = useState<Decade>("1920");
+  const [selectedDecade, setSelectedDecade] = useState<TimePeriod>("1920");
   const [selectedRegion, setSelectedRegion] = useState<Region>("Western Europe");
   const [selectedArtForm, setSelectedArtForm] = useState<ArtForm>("Visual Arts");
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-7xl mx-auto">
+      <main className="max-w-6xl mx-auto px-2">
         <Header />
         
-        <section className="mb-8">
+        <section>
           <DecadeSlider
             selectedDecade={selectedDecade}
             onDecadeChange={setSelectedDecade}
           />
         </section>
 
-        <section className="mb-4">
-          <PaperGlobe
-            selectedRegion={selectedRegion}
-            onRegionChange={setSelectedRegion}
-          />
-        </section>
-
-        <section className="mb-8">
-          <ArtFormSelector
-            selectedArtForm={selectedArtForm}
-            onArtFormChange={setSelectedArtForm}
-          />
-        </section>
-
-        <section className="pb-20">
-          <ArtDisplay
-            decade={selectedDecade}
-            region={selectedRegion}
-            artForm={selectedArtForm}
-          />
+        <section className="flex flex-col lg:flex-row items-center justify-center gap-4">
+          <div className="flex-shrink-0">
+            <PaperGlobe
+              selectedRegion={selectedRegion}
+              onRegionChange={setSelectedRegion}
+            />
+          </div>
+          
+          <div className="flex-1 max-w-xl">
+            <ArtFormSelector
+              selectedArtForm={selectedArtForm}
+              onArtFormChange={setSelectedArtForm}
+            />
+            <ArtDisplay
+              decade={selectedDecade}
+              region={selectedRegion}
+              artForm={selectedArtForm}
+            />
+          </div>
         </section>
       </main>
     </div>

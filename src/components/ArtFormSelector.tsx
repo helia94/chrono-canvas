@@ -7,7 +7,7 @@ interface ArtFormSelectorProps {
 
 const ArtFormSelector = ({ selectedArtForm, onArtFormChange }: ArtFormSelectorProps) => {
   return (
-    <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 px-8 py-8">
+    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 px-4 py-2">
       {artForms.map((artForm) => (
         <button
           key={artForm}
