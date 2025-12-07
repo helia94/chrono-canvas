@@ -9,8 +9,8 @@ import {
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 interface PaperGlobeProps {
-  selectedRegion: Region;
-  onRegionChange: (region: Region) => void;
+  selectedRegion: string;
+  onRegionChange: (region: string) => void;
 }
 
 // Map country names to regions (world-atlas uses NAME property)
@@ -268,7 +268,7 @@ const countryToRegion: Record<string, Region> = {
 
 
 const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
-  const [hoveredRegion, setHoveredRegion] = useState<Region | null>(null);
+  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [rotation, setRotation] = useState<[number, number]>([0, 0]);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
