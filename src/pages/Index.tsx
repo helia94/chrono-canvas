@@ -5,6 +5,7 @@ import PaperGlobe from "@/components/PaperGlobe";
 import ArtFormSelector from "@/components/ArtFormSelector";
 import ArtDisplay from "@/components/ArtDisplay";
 import VisualArtGallery from "@/components/VisualArtGallery";
+import MusicPlayer from "@/components/MusicPlayer";
 import { useConfig } from "@/hooks/useConfig";
 import { useArtData } from "@/hooks/useArtData";
 import { type TimePeriod, type Region, type ArtForm } from "@/lib/api";
@@ -29,6 +30,7 @@ const Index = () => {
   const artForms = config?.artForms ?? [];
 
   const isVisualArts = selectedArtForm === "Visual Arts";
+  const isMusic = selectedArtForm === "Music";
 
   if (configLoading && !config) {
     return (
@@ -77,10 +79,20 @@ const Index = () => {
           />
         </section>
 
-        {/* Row 2: Image Gallery (Visual Arts only) */}
+        {/* Row 2: Media Gallery */}
         {isVisualArts && (
           <section>
             <VisualArtGallery
+              popular={artData?.popular || null}
+              timeless={artData?.timeless || null}
+              isLoading={isLoading}
+            />
+          </section>
+        )}
+        
+        {isMusic && (
+          <section>
+            <MusicPlayer
               popular={artData?.popular || null}
               timeless={artData?.timeless || null}
               isLoading={isLoading}

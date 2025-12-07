@@ -11,12 +11,24 @@ export interface ArtImage {
   sourceUrl?: string;
 }
 
+export interface SpotifyTrack {
+  trackId: string;
+  name: string;
+  artist: string;
+  album: string;
+  previewUrl?: string | null;
+  embedUrl: string;
+  externalUrl: string;
+  albumImageUrl?: string | null;
+}
+
 export interface ArtEntry {
   genre: string;
   artists: string;
   exampleWork: string;
   description: string;
   image?: ArtImage | null;
+  spotify?: SpotifyTrack | null;
 }
 
 export interface ArtData {

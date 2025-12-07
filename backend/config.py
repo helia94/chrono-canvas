@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     perplexity_api_key: str = ""
     xai_api_key: str = ""
     
+    # Spotify API (for music search)
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+    
     # Server
     host: str = "0.0.0.0"
     port: int = 8000

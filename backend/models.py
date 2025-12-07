@@ -10,13 +10,26 @@ class ArtImage(BaseModel):
     sourceUrl: Optional[str] = None
 
 
+class SpotifyTrack(BaseModel):
+    """Spotify track data for music entries."""
+    trackId: str
+    name: str
+    artist: str
+    album: str
+    previewUrl: Optional[str] = None  # 30-second preview MP3 URL
+    embedUrl: str  # Spotify embed player URL
+    externalUrl: str  # Open in Spotify URL
+    albumImageUrl: Optional[str] = None
+
+
 class ArtEntry(BaseModel):
-    """Art entry with genre, artists, example work, and optional image."""
+    """Art entry with genre, artists, example work, and optional media."""
     genre: str  # e.g., "Surrealism", "Jazz", "Magical Realism"
     artists: str  # Prominent artist(s) of this genre
     exampleWork: str  # Specific work for image/album search
     description: str  # About the genre and its significance
-    image: Optional[ArtImage] = None
+    image: Optional[ArtImage] = None  # For Visual Arts
+    spotify: Optional[SpotifyTrack] = None  # For Music
     
     # For backwards compatibility, expose 'name' as alias for exampleWork
     @property

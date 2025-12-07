@@ -31,6 +31,12 @@ class ArtCache(Base):
     popular_description = Column(Text, nullable=False)
     popular_image_url = Column(String(1000), nullable=True)
     popular_image_source_url = Column(String(1000), nullable=True)
+    # Spotify data for Music
+    popular_spotify_track_id = Column(String(100), nullable=True)
+    popular_spotify_embed_url = Column(String(500), nullable=True)
+    popular_spotify_external_url = Column(String(500), nullable=True)
+    popular_spotify_preview_url = Column(String(500), nullable=True)
+    popular_spotify_album_image = Column(String(500), nullable=True)
     
     # Timeless art entry
     timeless_genre = Column(String(200), nullable=False)
@@ -39,6 +45,12 @@ class ArtCache(Base):
     timeless_description = Column(Text, nullable=False)
     timeless_image_url = Column(String(1000), nullable=True)
     timeless_image_source_url = Column(String(1000), nullable=True)
+    # Spotify data for Music
+    timeless_spotify_track_id = Column(String(100), nullable=True)
+    timeless_spotify_embed_url = Column(String(500), nullable=True)
+    timeless_spotify_external_url = Column(String(500), nullable=True)
+    timeless_spotify_preview_url = Column(String(500), nullable=True)
+    timeless_spotify_album_image = Column(String(500), nullable=True)
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)

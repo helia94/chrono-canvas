@@ -7,7 +7,8 @@ from cache import cache_layer
 from llm_providers import query_all_providers
 from consensus import synthesize_with_claude
 from met_api import search_artwork_images
-from models import ArtData, ArtEntry, ArtImage
+from spotify_api import search_music_tracks
+from models import ArtData, ArtEntry, ArtImage, SpotifyTrack
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,11 @@ class ArtService:
         if cached:
             logger.info(f"Cache hit for {decade}/{region}/{art_form}")
             
-            # Check if we need to fetch images for Visual Arts
+            # Check if we need to fetch media for Visual Arts or Music
+            updated = False
+            popular_entry = cached.popular
+            timeless_entry = cached.timeless
+            
             if art_form == "Visual Arts":
                 needs_popular_image = cached.popular.image is None
                 needs_timeless_image = cached.timeless.image is None
@@ -47,17 +52,11 @@ class ArtService:
                 if needs_popular_image or needs_timeless_image:
                     logger.info(f"Cache hit but missing images, fetching from Met API...")
                     try:
-                        # Use exampleWork for image search
                         popular_image, timeless_image = await search_artwork_images(
                             cached.popular.exampleWork,
                             cached.timeless.exampleWork,
                             art_form
                         )
-                        
-                        # Update entries with images
-                        updated = False
-                        popular_entry = cached.popular
-                        timeless_entry = cached.timeless
                         
                         if needs_popular_image and popular_image:
                             popular_entry = ArtEntry(
@@ -68,7 +67,8 @@ class ArtService:
                                 image=ArtImage(
                                     url=popular_image.thumbnail_url,
                                     sourceUrl=popular_image.source_url,
-                                )
+                                ),
+                                spotify=cached.popular.spotify,
                             )
                             updated = True
                         
@@ -81,24 +81,80 @@ class ArtService:
                                 image=ArtImage(
                                     url=timeless_image.thumbnail_url,
                                     sourceUrl=timeless_image.source_url,
-                                )
+                                ),
+                                spotify=cached.timeless.spotify,
+                            )
+                            updated = True
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch images for cached entry: {e}")
+            
+            elif art_form == "Music":
+                needs_popular_spotify = cached.popular.spotify is None
+                needs_timeless_spotify = cached.timeless.spotify is None
+                
+                if needs_popular_spotify or needs_timeless_spotify:
+                    logger.info(f"Cache hit but missing Spotify data, fetching...")
+                    try:
+                        popular_track, timeless_track = await search_music_tracks(
+                            cached.popular.exampleWork,
+                            cached.timeless.exampleWork,
+                            decade,
+                            art_form
+                        )
+                        
+                        if needs_popular_spotify and popular_track:
+                            popular_entry = ArtEntry(
+                                genre=cached.popular.genre,
+                                artists=cached.popular.artists,
+                                exampleWork=cached.popular.exampleWork,
+                                description=cached.popular.description,
+                                image=cached.popular.image,
+                                spotify=SpotifyTrack(
+                                    trackId=popular_track.track_id,
+                                    name=popular_track.name,
+                                    artist=popular_track.artist,
+                                    album=popular_track.album,
+                                    previewUrl=popular_track.preview_url,
+                                    embedUrl=popular_track.embed_url,
+                                    externalUrl=popular_track.external_url,
+                                    albumImageUrl=popular_track.album_image_url,
+                                ),
                             )
                             updated = True
                         
-                        if updated:
-                            # Build updated result and re-cache
-                            cached = ArtData(
-                                decade=cached.decade,
-                                region=cached.region,
-                                artForm=cached.artForm,
-                                popular=popular_entry,
-                                timeless=timeless_entry,
+                        if needs_timeless_spotify and timeless_track:
+                            timeless_entry = ArtEntry(
+                                genre=cached.timeless.genre,
+                                artists=cached.timeless.artists,
+                                exampleWork=cached.timeless.exampleWork,
+                                description=cached.timeless.description,
+                                image=cached.timeless.image,
+                                spotify=SpotifyTrack(
+                                    trackId=timeless_track.track_id,
+                                    name=timeless_track.name,
+                                    artist=timeless_track.artist,
+                                    album=timeless_track.album,
+                                    previewUrl=timeless_track.preview_url,
+                                    embedUrl=timeless_track.embed_url,
+                                    externalUrl=timeless_track.external_url,
+                                    albumImageUrl=timeless_track.album_image_url,
+                                ),
                             )
-                            await cache_layer.set(cached)
-                            logger.info(f"Updated cache with images for {decade}/{region}/{art_form}")
+                            updated = True
                     except Exception as e:
-                        logger.warning(f"Failed to fetch images for cached entry: {e}")
-                        # Return cached data without images
+                        logger.warning(f"Failed to fetch Spotify data for cached entry: {e}")
+            
+            if updated:
+                # Build updated result and re-cache
+                cached = ArtData(
+                    decade=cached.decade,
+                    region=cached.region,
+                    artForm=cached.artForm,
+                    popular=popular_entry,
+                    timeless=timeless_entry,
+                )
+                await cache_layer.set(cached)
+                logger.info(f"Updated cache with media for {decade}/{region}/{art_form}")
             
             return cached
         
@@ -137,43 +193,89 @@ class ArtService:
             logger.error(f"Error synthesizing with Claude: {e}")
             return None
         
-        # Step 5: Fetch artwork images from Met API (for Visual Arts only)
-        try:
-            logger.info("Fetching artwork images from Met API...")
-            # Use exampleWork for image search
-            popular_image, timeless_image = await search_artwork_images(
-                popular_entry.exampleWork,
-                timeless_entry.exampleWork,
-                art_form
-            )
-            
-            # Add images to entries
-            if popular_image:
-                popular_entry = ArtEntry(
-                    genre=popular_entry.genre,
-                    artists=popular_entry.artists,
-                    exampleWork=popular_entry.exampleWork,
-                    description=popular_entry.description,
-                    image=ArtImage(
-                        url=popular_image.thumbnail_url,
-                        sourceUrl=popular_image.source_url,
-                    )
+        # Step 5: Fetch media (images for Visual Arts, Spotify for Music)
+        if art_form == "Visual Arts":
+            try:
+                logger.info("Fetching artwork images from Met API...")
+                popular_image, timeless_image = await search_artwork_images(
+                    popular_entry.exampleWork,
+                    timeless_entry.exampleWork,
+                    art_form
                 )
-            
-            if timeless_image:
-                timeless_entry = ArtEntry(
-                    genre=timeless_entry.genre,
-                    artists=timeless_entry.artists,
-                    exampleWork=timeless_entry.exampleWork,
-                    description=timeless_entry.description,
-                    image=ArtImage(
-                        url=timeless_image.thumbnail_url,
-                        sourceUrl=timeless_image.source_url,
+                
+                if popular_image:
+                    popular_entry = ArtEntry(
+                        genre=popular_entry.genre,
+                        artists=popular_entry.artists,
+                        exampleWork=popular_entry.exampleWork,
+                        description=popular_entry.description,
+                        image=ArtImage(
+                            url=popular_image.thumbnail_url,
+                            sourceUrl=popular_image.source_url,
+                        )
                     )
+                
+                if timeless_image:
+                    timeless_entry = ArtEntry(
+                        genre=timeless_entry.genre,
+                        artists=timeless_entry.artists,
+                        exampleWork=timeless_entry.exampleWork,
+                        description=timeless_entry.description,
+                        image=ArtImage(
+                            url=timeless_image.thumbnail_url,
+                            sourceUrl=timeless_image.source_url,
+                        )
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to fetch artwork images: {e}")
+        
+        elif art_form == "Music":
+            try:
+                logger.info("Fetching Spotify tracks...")
+                popular_track, timeless_track = await search_music_tracks(
+                    popular_entry.exampleWork,
+                    timeless_entry.exampleWork,
+                    decade,
+                    art_form
                 )
-        except Exception as e:
-            logger.warning(f"Failed to fetch artwork images: {e}")
-            # Continue without images - they're optional
+                
+                if popular_track:
+                    popular_entry = ArtEntry(
+                        genre=popular_entry.genre,
+                        artists=popular_entry.artists,
+                        exampleWork=popular_entry.exampleWork,
+                        description=popular_entry.description,
+                        spotify=SpotifyTrack(
+                            trackId=popular_track.track_id,
+                            name=popular_track.name,
+                            artist=popular_track.artist,
+                            album=popular_track.album,
+                            previewUrl=popular_track.preview_url,
+                            embedUrl=popular_track.embed_url,
+                            externalUrl=popular_track.external_url,
+                            albumImageUrl=popular_track.album_image_url,
+                        )
+                    )
+                
+                if timeless_track:
+                    timeless_entry = ArtEntry(
+                        genre=timeless_entry.genre,
+                        artists=timeless_entry.artists,
+                        exampleWork=timeless_entry.exampleWork,
+                        description=timeless_entry.description,
+                        spotify=SpotifyTrack(
+                            trackId=timeless_track.track_id,
+                            name=timeless_track.name,
+                            artist=timeless_track.artist,
+                            album=timeless_track.album,
+                            previewUrl=timeless_track.preview_url,
+                            embedUrl=timeless_track.embed_url,
+                            externalUrl=timeless_track.external_url,
+                            albumImageUrl=timeless_track.album_image_url,
+                        )
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to fetch Spotify tracks: {e}")
         
         # Step 6: Build result
         result = ArtData(
