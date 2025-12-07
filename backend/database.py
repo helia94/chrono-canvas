@@ -2,7 +2,7 @@
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column, String, Text, DateTime, Index
+from sqlalchemy import Column, String, Text, DateTime, Index, text
 from datetime import datetime
 from typing import AsyncGenerator
 
@@ -71,6 +71,16 @@ async def init_db():
     # Create tables
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Run migrations for existing tables (add new columns if missing)
+    async with _engine.begin() as conn:
+        await conn.execute(text("""
+            ALTER TABLE chrono_art_cache 
+            ADD COLUMN IF NOT EXISTS popular_image_url VARCHAR(1000),
+            ADD COLUMN IF NOT EXISTS popular_image_source_url VARCHAR(1000),
+            ADD COLUMN IF NOT EXISTS timeless_image_url VARCHAR(1000),
+            ADD COLUMN IF NOT EXISTS timeless_image_source_url VARCHAR(1000)
+        """))
     
     return _engine
 
