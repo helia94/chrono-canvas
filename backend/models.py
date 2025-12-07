@@ -10,16 +10,12 @@ class ArtImage(BaseModel):
     sourceUrl: Optional[str] = None
 
 
-class SpotifyTrack(BaseModel):
-    """Spotify track data for music entries."""
-    trackId: str
-    name: str
-    artist: str
-    album: str
-    previewUrl: Optional[str] = None  # 30-second preview MP3 URL
-    embedUrl: str  # Spotify embed player URL
-    externalUrl: str  # Open in Spotify URL
-    albumImageUrl: Optional[str] = None
+class YouTubeVideo(BaseModel):
+    """YouTube video data for music entries."""
+    videoId: str
+    title: str
+    url: str  # YouTube watch URL
+    embedUrl: str  # YouTube embed URL for iframe
     recordSales: Optional[str] = None  # e.g., "50 million copies sold"
 
 
@@ -30,7 +26,7 @@ class ArtEntry(BaseModel):
     exampleWork: str  # Specific work for image/album search
     description: str  # About the genre and its significance
     image: Optional[ArtImage] = None  # For Visual Arts
-    spotify: Optional[SpotifyTrack] = None  # For Music
+    youtube: Optional[YouTubeVideo] = None  # For Music
     blogUrl: Optional[str] = None  # Personal blog about this genre
     
     # For backwards compatibility, expose 'name' as alias for exampleWork

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import ArtCache, get_session
-from models import ArtData, ArtEntry, ArtImage, SpotifyTrack
+from models import ArtData, ArtEntry, ArtImage, YouTubeVideo
 
 logger = logging.getLogger(__name__)
 
@@ -47,32 +47,24 @@ class CacheLayer:
                             sourceUrl=cached.timeless_image_source_url,
                         )
                     
-                    # Build Spotify objects if track IDs exist
-                    popular_spotify = None
-                    if cached.popular_spotify_track_id:
-                        popular_spotify = SpotifyTrack(
-                            trackId=cached.popular_spotify_track_id,
-                            name=cached.popular_example_work,
-                            artist=cached.popular_artists,
-                            album="",
-                            previewUrl=cached.popular_spotify_preview_url,
-                            embedUrl=cached.popular_spotify_embed_url or "",
-                            externalUrl=cached.popular_spotify_external_url or "",
-                            albumImageUrl=cached.popular_spotify_album_image,
+                    # Build YouTube objects if video IDs exist
+                    popular_youtube = None
+                    if getattr(cached, 'popular_youtube_video_id', None):
+                        popular_youtube = YouTubeVideo(
+                            videoId=cached.popular_youtube_video_id,
+                            title=cached.popular_example_work,
+                            url=cached.popular_youtube_url or "",
+                            embedUrl=cached.popular_youtube_embed_url or "",
                             recordSales=getattr(cached, 'popular_record_sales', None),
                         )
                     
-                    timeless_spotify = None
-                    if cached.timeless_spotify_track_id:
-                        timeless_spotify = SpotifyTrack(
-                            trackId=cached.timeless_spotify_track_id,
-                            name=cached.timeless_example_work,
-                            artist=cached.timeless_artists,
-                            album="",
-                            previewUrl=cached.timeless_spotify_preview_url,
-                            embedUrl=cached.timeless_spotify_embed_url or "",
-                            externalUrl=cached.timeless_spotify_external_url or "",
-                            albumImageUrl=cached.timeless_spotify_album_image,
+                    timeless_youtube = None
+                    if getattr(cached, 'timeless_youtube_video_id', None):
+                        timeless_youtube = YouTubeVideo(
+                            videoId=cached.timeless_youtube_video_id,
+                            title=cached.timeless_example_work,
+                            url=cached.timeless_youtube_url or "",
+                            embedUrl=cached.timeless_youtube_embed_url or "",
                             recordSales=getattr(cached, 'timeless_record_sales', None),
                         )
                     
@@ -86,7 +78,7 @@ class CacheLayer:
                             exampleWork=cached.popular_example_work,
                             description=cached.popular_description,
                             image=popular_image,
-                            spotify=popular_spotify,
+                            youtube=popular_youtube,
                             blogUrl=getattr(cached, 'popular_blog_url', None),
                         ),
                         timeless=ArtEntry(
@@ -95,7 +87,7 @@ class CacheLayer:
                             exampleWork=cached.timeless_example_work,
                             description=cached.timeless_description,
                             image=timeless_image,
-                            spotify=timeless_spotify,
+                            youtube=timeless_youtube,
                             blogUrl=getattr(cached, 'timeless_blog_url', None),
                         ),
                     )
@@ -125,9 +117,9 @@ class CacheLayer:
                 timeless_image_url = data.timeless.image.url if data.timeless.image else None
                 timeless_image_source = data.timeless.image.sourceUrl if data.timeless.image else None
                 
-                # Extract Spotify data
-                pop_spotify = data.popular.spotify
-                time_spotify = data.timeless.spotify
+                # Extract YouTube data
+                pop_youtube = data.popular.youtube
+                time_youtube = data.timeless.youtube
                 
                 if existing:
                     # Update existing
@@ -137,12 +129,10 @@ class CacheLayer:
                     existing.popular_description = data.popular.description
                     existing.popular_image_url = popular_image_url
                     existing.popular_image_source_url = popular_image_source
-                    existing.popular_spotify_track_id = pop_spotify.trackId if pop_spotify else None
-                    existing.popular_spotify_embed_url = pop_spotify.embedUrl if pop_spotify else None
-                    existing.popular_spotify_external_url = pop_spotify.externalUrl if pop_spotify else None
-                    existing.popular_spotify_preview_url = pop_spotify.previewUrl if pop_spotify else None
-                    existing.popular_spotify_album_image = pop_spotify.albumImageUrl if pop_spotify else None
-                    existing.popular_record_sales = pop_spotify.recordSales if pop_spotify else None
+                    existing.popular_youtube_video_id = pop_youtube.videoId if pop_youtube else None
+                    existing.popular_youtube_url = pop_youtube.url if pop_youtube else None
+                    existing.popular_youtube_embed_url = pop_youtube.embedUrl if pop_youtube else None
+                    existing.popular_record_sales = pop_youtube.recordSales if pop_youtube else None
                     existing.popular_blog_url = data.popular.blogUrl
                     existing.timeless_genre = data.timeless.genre
                     existing.timeless_artists = data.timeless.artists
@@ -150,12 +140,10 @@ class CacheLayer:
                     existing.timeless_description = data.timeless.description
                     existing.timeless_image_url = timeless_image_url
                     existing.timeless_image_source_url = timeless_image_source
-                    existing.timeless_spotify_track_id = time_spotify.trackId if time_spotify else None
-                    existing.timeless_spotify_embed_url = time_spotify.embedUrl if time_spotify else None
-                    existing.timeless_spotify_external_url = time_spotify.externalUrl if time_spotify else None
-                    existing.timeless_spotify_preview_url = time_spotify.previewUrl if time_spotify else None
-                    existing.timeless_spotify_album_image = time_spotify.albumImageUrl if time_spotify else None
-                    existing.timeless_record_sales = time_spotify.recordSales if time_spotify else None
+                    existing.timeless_youtube_video_id = time_youtube.videoId if time_youtube else None
+                    existing.timeless_youtube_url = time_youtube.url if time_youtube else None
+                    existing.timeless_youtube_embed_url = time_youtube.embedUrl if time_youtube else None
+                    existing.timeless_record_sales = time_youtube.recordSales if time_youtube else None
                     existing.timeless_blog_url = data.timeless.blogUrl
                 else:
                     # Insert new
@@ -169,12 +157,10 @@ class CacheLayer:
                         popular_description=data.popular.description,
                         popular_image_url=popular_image_url,
                         popular_image_source_url=popular_image_source,
-                        popular_spotify_track_id=pop_spotify.trackId if pop_spotify else None,
-                        popular_spotify_embed_url=pop_spotify.embedUrl if pop_spotify else None,
-                        popular_spotify_external_url=pop_spotify.externalUrl if pop_spotify else None,
-                        popular_spotify_preview_url=pop_spotify.previewUrl if pop_spotify else None,
-                        popular_spotify_album_image=pop_spotify.albumImageUrl if pop_spotify else None,
-                        popular_record_sales=pop_spotify.recordSales if pop_spotify else None,
+                        popular_youtube_video_id=pop_youtube.videoId if pop_youtube else None,
+                        popular_youtube_url=pop_youtube.url if pop_youtube else None,
+                        popular_youtube_embed_url=pop_youtube.embedUrl if pop_youtube else None,
+                        popular_record_sales=pop_youtube.recordSales if pop_youtube else None,
                         popular_blog_url=data.popular.blogUrl,
                         timeless_genre=data.timeless.genre,
                         timeless_artists=data.timeless.artists,
@@ -182,12 +168,10 @@ class CacheLayer:
                         timeless_description=data.timeless.description,
                         timeless_image_url=timeless_image_url,
                         timeless_image_source_url=timeless_image_source,
-                        timeless_spotify_track_id=time_spotify.trackId if time_spotify else None,
-                        timeless_spotify_embed_url=time_spotify.embedUrl if time_spotify else None,
-                        timeless_spotify_external_url=time_spotify.externalUrl if time_spotify else None,
-                        timeless_spotify_preview_url=time_spotify.previewUrl if time_spotify else None,
-                        timeless_spotify_album_image=time_spotify.albumImageUrl if time_spotify else None,
-                        timeless_record_sales=time_spotify.recordSales if time_spotify else None,
+                        timeless_youtube_video_id=time_youtube.videoId if time_youtube else None,
+                        timeless_youtube_url=time_youtube.url if time_youtube else None,
+                        timeless_youtube_embed_url=time_youtube.embedUrl if time_youtube else None,
+                        timeless_record_sales=time_youtube.recordSales if time_youtube else None,
                         timeless_blog_url=data.timeless.blogUrl,
                     )
                     session.add(cache_entry)

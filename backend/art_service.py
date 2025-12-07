@@ -7,10 +7,10 @@ from cache import cache_layer
 from llm_providers import query_all_providers
 from consensus import synthesize_with_claude
 from met_api import search_artwork_images
-from spotify_api import search_music_tracks
+from youtube_search import search_music_videos
 from record_sales import lookup_sales_for_tracks
 from blog_search import start_background_blog_search
-from models import ArtData, ArtEntry, ArtImage, SpotifyTrack
+from models import ArtData, ArtEntry, ArtImage, YouTubeVideo
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,9 @@ class ArtService:
     2. If not cached, query 3 LLM providers in parallel
     3. Send responses to Claude for consensus and final writing
     4. Fetch artwork images from Met API (for Visual Arts)
-    5. Cache the result
-    6. Return to user
+    5. Fetch YouTube videos (for Music)
+    6. Cache the result
+    7. Return to user
     """
     
     async def get_art(self, decade: str, region: str, art_form: str) -> Optional[ArtData]:
@@ -33,7 +34,7 @@ class ArtService:
         Get art data for the given parameters.
         
         Uses cache if available, otherwise queries LLMs.
-        If cached but images are missing (for Visual Arts), fetches images and updates cache.
+        If cached but media is missing, fetches and updates cache.
         """
         # Step 1: Check cache
         logger.info(f"Checking cache for {decade}/{region}/{art_form}")
@@ -70,7 +71,7 @@ class ArtService:
                                     url=popular_image.thumbnail_url,
                                     sourceUrl=popular_image.source_url,
                                 ),
-                                spotify=cached.popular.spotify,
+                                youtube=cached.popular.youtube,
                             )
                             updated = True
                         
@@ -84,67 +85,73 @@ class ArtService:
                                     url=timeless_image.thumbnail_url,
                                     sourceUrl=timeless_image.source_url,
                                 ),
-                                spotify=cached.timeless.spotify,
+                                youtube=cached.timeless.youtube,
                             )
                             updated = True
                     except Exception as e:
                         logger.warning(f"Failed to fetch images for cached entry: {e}")
             
             elif art_form == "Music":
-                needs_popular_spotify = cached.popular.spotify is None
-                needs_timeless_spotify = cached.timeless.spotify is None
+                needs_popular_youtube = cached.popular.youtube is None
+                needs_timeless_youtube = cached.timeless.youtube is None
                 
-                if needs_popular_spotify or needs_timeless_spotify:
-                    logger.info(f"Cache hit but missing Spotify data, fetching...")
+                if needs_popular_youtube or needs_timeless_youtube:
+                    logger.info(f"Cache hit but missing YouTube data, fetching...")
                     try:
-                        popular_track, timeless_track = await search_music_tracks(
+                        popular_video, timeless_video = await search_music_videos(
                             cached.popular.exampleWork,
                             cached.timeless.exampleWork,
                             decade,
                             art_form
                         )
                         
-                        if needs_popular_spotify and popular_track:
+                        # Also lookup record sales
+                        popular_sales, timeless_sales = None, None
+                        try:
+                            popular_sales, timeless_sales = await lookup_sales_for_tracks(
+                                cached.popular.exampleWork,
+                                cached.popular.artists,
+                                cached.timeless.exampleWork,
+                                cached.timeless.artists,
+                            )
+                        except Exception as e:
+                            logger.warning(f"Record sales lookup failed: {e}")
+                        
+                        if needs_popular_youtube and popular_video:
                             popular_entry = ArtEntry(
                                 genre=cached.popular.genre,
                                 artists=cached.popular.artists,
                                 exampleWork=cached.popular.exampleWork,
                                 description=cached.popular.description,
                                 image=cached.popular.image,
-                                spotify=SpotifyTrack(
-                                    trackId=popular_track.track_id,
-                                    name=popular_track.name,
-                                    artist=popular_track.artist,
-                                    album=popular_track.album,
-                                    previewUrl=popular_track.preview_url,
-                                    embedUrl=popular_track.embed_url,
-                                    externalUrl=popular_track.external_url,
-                                    albumImageUrl=popular_track.album_image_url,
+                                youtube=YouTubeVideo(
+                                    videoId=popular_video.video_id,
+                                    title=popular_video.title,
+                                    url=popular_video.url,
+                                    embedUrl=popular_video.embed_url,
+                                    recordSales=popular_sales,
                                 ),
                             )
                             updated = True
                         
-                        if needs_timeless_spotify and timeless_track:
+                        if needs_timeless_youtube and timeless_video:
                             timeless_entry = ArtEntry(
                                 genre=cached.timeless.genre,
                                 artists=cached.timeless.artists,
                                 exampleWork=cached.timeless.exampleWork,
                                 description=cached.timeless.description,
                                 image=cached.timeless.image,
-                                spotify=SpotifyTrack(
-                                    trackId=timeless_track.track_id,
-                                    name=timeless_track.name,
-                                    artist=timeless_track.artist,
-                                    album=timeless_track.album,
-                                    previewUrl=timeless_track.preview_url,
-                                    embedUrl=timeless_track.embed_url,
-                                    externalUrl=timeless_track.external_url,
-                                    albumImageUrl=timeless_track.album_image_url,
+                                youtube=YouTubeVideo(
+                                    videoId=timeless_video.video_id,
+                                    title=timeless_video.title,
+                                    url=timeless_video.url,
+                                    embedUrl=timeless_video.embed_url,
+                                    recordSales=timeless_sales,
                                 ),
                             )
                             updated = True
                     except Exception as e:
-                        logger.warning(f"Failed to fetch Spotify data for cached entry: {e}")
+                        logger.warning(f"Failed to fetch YouTube data for cached entry: {e}")
             
             if updated:
                 # Build updated result and re-cache
@@ -195,7 +202,7 @@ class ArtService:
             logger.error(f"Error synthesizing with Claude: {e}")
             return None
         
-        # Step 5: Fetch media (images for Visual Arts, Spotify for Music)
+        # Step 5: Fetch media (images for Visual Arts, YouTube for Music)
         if art_form == "Visual Arts":
             try:
                 logger.info("Fetching artwork images from Met API...")
@@ -233,8 +240,8 @@ class ArtService:
         
         elif art_form == "Music":
             try:
-                logger.info("Fetching Spotify tracks...")
-                popular_track, timeless_track = await search_music_tracks(
+                logger.info("Fetching YouTube videos...")
+                popular_video, timeless_video = await search_music_videos(
                     popular_entry.exampleWork,
                     timeless_entry.exampleWork,
                     decade,
@@ -254,45 +261,37 @@ class ArtService:
                 except Exception as e:
                     logger.warning(f"Record sales lookup failed: {e}")
                 
-                if popular_track:
+                if popular_video:
                     popular_entry = ArtEntry(
                         genre=popular_entry.genre,
                         artists=popular_entry.artists,
                         exampleWork=popular_entry.exampleWork,
                         description=popular_entry.description,
-                        spotify=SpotifyTrack(
-                            trackId=popular_track.track_id,
-                            name=popular_track.name,
-                            artist=popular_track.artist,
-                            album=popular_track.album,
-                            previewUrl=popular_track.preview_url,
-                            embedUrl=popular_track.embed_url,
-                            externalUrl=popular_track.external_url,
-                            albumImageUrl=popular_track.album_image_url,
+                        youtube=YouTubeVideo(
+                            videoId=popular_video.video_id,
+                            title=popular_video.title,
+                            url=popular_video.url,
+                            embedUrl=popular_video.embed_url,
                             recordSales=popular_sales,
                         )
                     )
                 
-                if timeless_track:
+                if timeless_video:
                     timeless_entry = ArtEntry(
                         genre=timeless_entry.genre,
                         artists=timeless_entry.artists,
                         exampleWork=timeless_entry.exampleWork,
                         description=timeless_entry.description,
-                        spotify=SpotifyTrack(
-                            trackId=timeless_track.track_id,
-                            name=timeless_track.name,
-                            artist=timeless_track.artist,
-                            album=timeless_track.album,
-                            previewUrl=timeless_track.preview_url,
-                            embedUrl=timeless_track.embed_url,
-                            externalUrl=timeless_track.external_url,
-                            albumImageUrl=timeless_track.album_image_url,
+                        youtube=YouTubeVideo(
+                            videoId=timeless_video.video_id,
+                            title=timeless_video.title,
+                            url=timeless_video.url,
+                            embedUrl=timeless_video.embed_url,
                             recordSales=timeless_sales,
                         )
                     )
             except Exception as e:
-                logger.warning(f"Failed to fetch Spotify tracks: {e}")
+                logger.warning(f"Failed to fetch YouTube videos: {e}")
         
         # Step 6: Build result
         result = ArtData(

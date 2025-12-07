@@ -11,15 +11,11 @@ export interface ArtImage {
   sourceUrl?: string;
 }
 
-export interface SpotifyTrack {
-  trackId: string;
-  name: string;
-  artist: string;
-  album: string;
-  previewUrl?: string | null;
+export interface YouTubeVideo {
+  videoId: string;
+  title: string;
+  url: string;
   embedUrl: string;
-  externalUrl: string;
-  albumImageUrl?: string | null;
   recordSales?: string | null;
 }
 
@@ -29,7 +25,7 @@ export interface ArtEntry {
   exampleWork: string;
   description: string;
   image?: ArtImage | null;
-  spotify?: SpotifyTrack | null;
+  youtube?: YouTubeVideo | null;
   blogUrl?: string | null;
 }
 

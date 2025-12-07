@@ -31,12 +31,10 @@ class ArtCache(Base):
     popular_description = Column(Text, nullable=False)
     popular_image_url = Column(String(1000), nullable=True)
     popular_image_source_url = Column(String(1000), nullable=True)
-    # Spotify data for Music
-    popular_spotify_track_id = Column(String(100), nullable=True)
-    popular_spotify_embed_url = Column(String(500), nullable=True)
-    popular_spotify_external_url = Column(String(500), nullable=True)
-    popular_spotify_preview_url = Column(String(500), nullable=True)
-    popular_spotify_album_image = Column(String(500), nullable=True)
+    # YouTube data for Music
+    popular_youtube_video_id = Column(String(20), nullable=True)
+    popular_youtube_url = Column(String(500), nullable=True)
+    popular_youtube_embed_url = Column(String(500), nullable=True)
     popular_record_sales = Column(String(200), nullable=True)
     # Blog URL (personal perspective)
     popular_blog_url = Column(String(1000), nullable=True)
@@ -48,12 +46,10 @@ class ArtCache(Base):
     timeless_description = Column(Text, nullable=False)
     timeless_image_url = Column(String(1000), nullable=True)
     timeless_image_source_url = Column(String(1000), nullable=True)
-    # Spotify data for Music
-    timeless_spotify_track_id = Column(String(100), nullable=True)
-    timeless_spotify_embed_url = Column(String(500), nullable=True)
-    timeless_spotify_external_url = Column(String(500), nullable=True)
-    timeless_spotify_preview_url = Column(String(500), nullable=True)
-    timeless_spotify_album_image = Column(String(500), nullable=True)
+    # YouTube data for Music
+    timeless_youtube_video_id = Column(String(20), nullable=True)
+    timeless_youtube_url = Column(String(500), nullable=True)
+    timeless_youtube_embed_url = Column(String(500), nullable=True)
     timeless_record_sales = Column(String(200), nullable=True)
     # Blog URL (personal perspective)
     timeless_blog_url = Column(String(1000), nullable=True)
@@ -101,7 +97,13 @@ async def init_db():
             ADD COLUMN IF NOT EXISTS popular_blog_url VARCHAR(1000),
             ADD COLUMN IF NOT EXISTS timeless_blog_url VARCHAR(1000),
             ADD COLUMN IF NOT EXISTS popular_record_sales VARCHAR(200),
-            ADD COLUMN IF NOT EXISTS timeless_record_sales VARCHAR(200)
+            ADD COLUMN IF NOT EXISTS timeless_record_sales VARCHAR(200),
+            ADD COLUMN IF NOT EXISTS popular_youtube_video_id VARCHAR(20),
+            ADD COLUMN IF NOT EXISTS popular_youtube_url VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS popular_youtube_embed_url VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS timeless_youtube_video_id VARCHAR(20),
+            ADD COLUMN IF NOT EXISTS timeless_youtube_url VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS timeless_youtube_embed_url VARCHAR(500)
         """))
     
     return _engine
