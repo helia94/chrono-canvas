@@ -37,6 +37,8 @@ class ArtCache(Base):
     popular_spotify_external_url = Column(String(500), nullable=True)
     popular_spotify_preview_url = Column(String(500), nullable=True)
     popular_spotify_album_image = Column(String(500), nullable=True)
+    # Blog URL (personal perspective)
+    popular_blog_url = Column(String(1000), nullable=True)
     
     # Timeless art entry
     timeless_genre = Column(String(200), nullable=False)
@@ -51,6 +53,8 @@ class ArtCache(Base):
     timeless_spotify_external_url = Column(String(500), nullable=True)
     timeless_spotify_preview_url = Column(String(500), nullable=True)
     timeless_spotify_album_image = Column(String(500), nullable=True)
+    # Blog URL (personal perspective)
+    timeless_blog_url = Column(String(1000), nullable=True)
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -88,14 +92,13 @@ async def init_db():
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    # Drop old cache table and recreate with new schema
-    # This is a one-time migration for the new genre/artists/exampleWork structure
+    # Add new columns if they don't exist (migrations)
     async with _engine.begin() as conn:
-        await conn.execute(text("DROP TABLE IF EXISTS chrono_art_cache"))
-    
-    # Recreate tables with new schema
-    async with _engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(text("""
+            ALTER TABLE chrono_art_cache 
+            ADD COLUMN IF NOT EXISTS popular_blog_url VARCHAR(1000),
+            ADD COLUMN IF NOT EXISTS timeless_blog_url VARCHAR(1000)
+        """))
     
     return _engine
 

@@ -8,6 +8,7 @@ from llm_providers import query_all_providers
 from consensus import synthesize_with_claude
 from met_api import search_artwork_images
 from spotify_api import search_music_tracks
+from blog_search import start_background_blog_search
 from models import ArtData, ArtEntry, ArtImage, SpotifyTrack
 
 logger = logging.getLogger(__name__)
@@ -293,6 +294,23 @@ class ArtService:
         except Exception as e:
             logger.warning(f"Failed to cache result: {e}")
             # Don't fail the request if caching fails
+        
+        # Step 8: Start background blog search (fire-and-forget)
+        # This will search for personal blogs and update the cache later
+        try:
+            start_background_blog_search(
+                popular_genre=popular_entry.genre,
+                popular_artists=popular_entry.artists,
+                timeless_genre=timeless_entry.genre,
+                timeless_artists=timeless_entry.artists,
+                art_form=art_form,
+                decade=decade,
+                region=region,
+                cache_key=(decade, region, art_form),
+            )
+        except Exception as e:
+            logger.warning(f"Failed to start background blog search: {e}")
+            # Don't fail - this is optional
         
         return result
     

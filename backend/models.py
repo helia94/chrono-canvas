@@ -30,6 +30,7 @@ class ArtEntry(BaseModel):
     description: str  # About the genre and its significance
     image: Optional[ArtImage] = None  # For Visual Arts
     spotify: Optional[SpotifyTrack] = None  # For Music
+    blogUrl: Optional[str] = None  # Personal blog about this genre
     
     # For backwards compatibility, expose 'name' as alias for exampleWork
     @property

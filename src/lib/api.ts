@@ -29,6 +29,7 @@ export interface ArtEntry {
   description: string;
   image?: ArtImage | null;
   spotify?: SpotifyTrack | null;
+  blogUrl?: string | null;
 }
 
 export interface ArtData {

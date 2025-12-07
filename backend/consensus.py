@@ -72,6 +72,12 @@ def _build_consensus_prompt(
     
     type_label = "most popular" if query_type == "popular" else "most timeless/enduring"
     
+    tone_instructions = """Write a short, honest description (2-3 sentences) about this genre. 
+Be authentic and direct - like a knowledgeable friend who genuinely cares about this art form.
+NO marketing language, NO romanticizing, NO hyperbole like "revolutionary" or "transformed everything".
+Tell the truth about what made it interesting, including any contradictions or complexities.
+If it had flaws or critics, acknowledge them briefly. Sound like a thoughtful person, not a museum placard."""
+
     if majority_genre:
         return f"""Three AI sources were asked about the {type_label} {art_form.lower()} genre from {region} in the {decade_label}.
 
@@ -84,7 +90,7 @@ Based on these responses, provide:
 1. The genre name (use the majority)
 2. The most notable artists mentioned (combine the best from all sources)
 3. Pick the best example work mentioned
-4. Write a short, engaging description (2-3 sentences) about this genre and why it mattered. Be casual and friendly - focus on what makes it surprising, juicy, or fascinating. No formal academic tone."""
+4. {tone_instructions}"""
     else:
         return f"""Three AI sources were asked about the {type_label} {art_form.lower()} genre from {region} in the {decade_label}.
 
@@ -95,7 +101,7 @@ There's no clear majority on genre. Using your judgment:
 1. Pick the most accurate/notable genre
 2. List the most notable artists
 3. Pick the best example work
-4. Write a short, engaging description (2-3 sentences) about this genre and why it mattered. Be casual and friendly."""
+4. {tone_instructions}"""
 
 
 async def synthesize_with_claude(

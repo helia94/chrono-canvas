@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { type ArtEntry } from "@/lib/api";
 
 interface ArtCardProps {
@@ -7,6 +8,8 @@ interface ArtCardProps {
 }
 
 const ArtCard = ({ title, entry, isLoading }: ArtCardProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <div className="paper-card p-4 md:p-5 min-h-[140px] flex flex-col paper-fold-enter">
       {/* Ochre accent line */}
@@ -31,14 +34,35 @@ const ArtCard = ({ title, entry, isLoading }: ArtCardProps) => {
           <p className="font-body text-xs text-primary mb-2">
             {entry.artists}
           </p>
-          {/* Description */}
-          <p className="font-body text-xs text-muted-foreground leading-relaxed line-clamp-3">
-            {entry.description}
-          </p>
+          {/* Description with expand/collapse */}
+          <div className="relative">
+            <p className={`font-body text-xs text-muted-foreground leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}>
+              {entry.description}
+            </p>
+            {entry.description.length > 150 && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="font-body text-xs text-primary hover:text-primary/80 mt-1 underline underline-offset-2"
+              >
+                {isExpanded ? 'Show less' : 'Read more'}
+              </button>
+            )}
+          </div>
           {/* Example work */}
           <p className="font-body text-[10px] text-muted-foreground/70 mt-2 italic">
             Notable: {entry.exampleWork}
           </p>
+          {/* Blog link if available */}
+          {entry.blogUrl && (
+            <a
+              href={entry.blogUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-body text-[10px] text-primary hover:text-primary/80 mt-1 underline underline-offset-2"
+            >
+              📖 Read a personal perspective →
+            </a>
+          )}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
