@@ -15,7 +15,9 @@ class FactCheckResponse:
     """Response from a fact-checking LLM provider."""
     provider: str
     query_type: str  # "popular" or "timeless"
-    art_name: str
+    genre: str
+    artists: str
+    example_work: str
     brief_reason: str
     success: bool
     error: Optional[str] = None
@@ -44,50 +46,75 @@ class LLMProvider(ABC):
 def _build_popular_prompt(decade: str, region: str, art_form: str) -> str:
     """Build prompt for popular art query."""
     decade_label = f"{decade}s"
-    return f"""What was the single most popular/famous {art_form.lower()} work from {region} in the {decade_label}?
-Give me just the name of the work and artist, plus one brief sentence why it was popular.
-Be concise. Format: "Work Name" by Artist - brief reason"""
+    return f"""What was the most popular/dominant {art_form.lower()} genre or movement from {region} in the {decade_label}?
+
+Respond in this exact format:
+GENRE: [name of the genre/movement]
+ARTISTS: [1-3 prominent artists of this genre from that time/region]
+EXAMPLE: [one specific famous work - title by artist]
+REASON: [one brief sentence why this genre was popular]"""
 
 
 def _build_timeless_prompt(decade: str, region: str, art_form: str) -> str:
     """Build prompt for timeless art query."""
     decade_label = f"{decade}s"
-    return f"""What is the most timeless/enduring {art_form.lower()} work from {region} created in the {decade_label}?
-Something that's still celebrated and influential today.
-Give me just the name of the work and artist, plus one brief sentence on its lasting impact.
-Be concise. Format: "Work Name" by Artist - brief reason"""
+    return f"""What {art_form.lower()} genre or movement from {region} in the {decade_label} has proven most timeless and influential today?
+
+Respond in this exact format:
+GENRE: [name of the genre/movement]
+ARTISTS: [1-3 prominent artists of this genre from that time/region]
+EXAMPLE: [one specific famous work that's still celebrated - title by artist]
+REASON: [one brief sentence on its lasting impact]"""
 
 
 def _parse_response(text: str, provider: str, query_type: str) -> FactCheckResponse:
     """Parse LLM response into structured format."""
-    # Simple parsing - extract the work name (first quoted string or first line)
     text = text.strip()
     
-    # Try to find quoted work name
-    if '"' in text:
-        parts = text.split('"')
-        if len(parts) >= 2:
-            art_name = parts[1]
-            brief_reason = text.replace(f'"{art_name}"', '').strip()
-            # Clean up the reason
-            brief_reason = brief_reason.lstrip(' -–—:').strip()
-            return FactCheckResponse(
-                provider=provider,
-                query_type=query_type,
-                art_name=art_name,
-                brief_reason=brief_reason[:500],  # Limit length
-                success=True,
-            )
+    genre = ""
+    artists = ""
+    example_work = ""
+    brief_reason = ""
     
-    # Fallback: use first line as name, rest as reason
-    lines = text.split('\n')
-    art_name = lines[0].strip()
-    brief_reason = ' '.join(lines[1:]).strip() if len(lines) > 1 else ""
+    # Parse structured format
+    for line in text.split('\n'):
+        line = line.strip()
+        if line.upper().startswith('GENRE:'):
+            genre = line.split(':', 1)[1].strip()
+        elif line.upper().startswith('ARTISTS:'):
+            artists = line.split(':', 1)[1].strip()
+        elif line.upper().startswith('EXAMPLE:'):
+            example_work = line.split(':', 1)[1].strip()
+        elif line.upper().startswith('REASON:'):
+            brief_reason = line.split(':', 1)[1].strip()
+    
+    # Fallback: try to extract from unstructured response
+    if not genre:
+        # Use first line or first quoted string as genre
+        lines = text.split('\n')
+        if lines:
+            first_line = lines[0].strip()
+            if '"' in first_line:
+                parts = first_line.split('"')
+                if len(parts) >= 2:
+                    genre = parts[1]
+            else:
+                genre = first_line[:100]
+    
+    if not example_work and '"' in text:
+        # Try to find a quoted work name
+        parts = text.split('"')
+        for i in range(1, len(parts), 2):
+            if len(parts[i]) > 3:  # Skip short quotes
+                example_work = parts[i]
+                break
     
     return FactCheckResponse(
         provider=provider,
         query_type=query_type,
-        art_name=art_name[:200],
+        genre=genre[:200],
+        artists=artists[:300],
+        example_work=example_work[:300],
         brief_reason=brief_reason[:500],
         success=True,
     )
@@ -121,7 +148,9 @@ class OpenAIProvider(LLMProvider):
             return FactCheckResponse(
                 provider=self.name,
                 query_type=query_type,
-                art_name="",
+                genre="",
+                artists="",
+                example_work="",
                 brief_reason="",
                 success=False,
                 error=str(e),
@@ -175,7 +204,9 @@ class PerplexityProvider(LLMProvider):
             return FactCheckResponse(
                 provider=self.name,
                 query_type=query_type,
-                art_name="",
+                genre="",
+                artists="",
+                example_work="",
                 brief_reason="",
                 success=False,
                 error=str(e),
@@ -229,7 +260,9 @@ class XAIProvider(LLMProvider):
             return FactCheckResponse(
                 provider=self.name,
                 query_type=query_type,
-                art_name="",
+                genre="",
+                artists="",
+                example_work="",
                 brief_reason="",
                 success=False,
                 error=str(e),
@@ -275,7 +308,9 @@ async def query_all_providers(
             response = FactCheckResponse(
                 provider=provider_name,
                 query_type=query_type,
-                art_name="",
+                genre="",
+                artists="",
+                example_work="",
                 brief_reason="",
                 success=False,
                 error=str(result),

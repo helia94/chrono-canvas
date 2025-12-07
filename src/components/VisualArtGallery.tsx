@@ -27,7 +27,7 @@ const ImageCard = ({ entry, label }: ImageCardProps) => {
           </span>
         </div>
         <p className="font-body text-sm text-foreground mt-3 line-clamp-2">
-          {entry.name}
+          {entry.exampleWork}
         </p>
       </div>
     );
@@ -47,7 +47,7 @@ const ImageCard = ({ entry, label }: ImageCardProps) => {
         <div className="relative overflow-hidden rounded">
           <img
             src={entry.image.url}
-            alt={entry.name}
+            alt={entry.exampleWork}
             className="w-full h-56 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
             onError={() => setImageError(true)}
             loading="lazy"
@@ -55,7 +55,7 @@ const ImageCard = ({ entry, label }: ImageCardProps) => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
         <p className="font-body text-sm text-foreground mt-3 line-clamp-2">
-          {entry.name}
+          {entry.exampleWork}
         </p>
         <p className="font-body text-[10px] text-muted-foreground mt-1">
           Source: The Metropolitan Museum of Art

@@ -9,14 +9,14 @@ from llm_providers import FactCheckResponse
 from models import ArtEntry
 
 
-def _find_majority(responses: List[FactCheckResponse]) -> Tuple[Optional[str], List[str]]:
+def _find_majority_genre(responses: List[FactCheckResponse]) -> Tuple[Optional[str], List[str]]:
     """
-    Find majority art name from responses.
+    Find majority genre from responses.
     
-    Returns (majority_name, all_names).
+    Returns (majority_genre, all_genres).
     Majority requires > 50% of successful responses.
     """
-    successful = [r for r in responses if r.success and r.art_name]
+    successful = [r for r in responses if r.success and r.genre]
     if not successful:
         return None, []
     
@@ -24,8 +24,8 @@ def _find_majority(responses: List[FactCheckResponse]) -> Tuple[Optional[str], L
     def normalize(name: str) -> str:
         return name.lower().strip().strip('"\'')
     
-    names = [r.art_name for r in successful]
-    normalized = [normalize(n) for n in names]
+    genres = [r.genre for r in successful]
+    normalized = [normalize(g) for g in genres]
     
     # Count occurrences
     counts = Counter(normalized)
@@ -36,11 +36,11 @@ def _find_majority(responses: List[FactCheckResponse]) -> Tuple[Optional[str], L
         # Majority = more than half
         if top_count > len(successful) / 2:
             # Return the original (non-normalized) name
-            for name, norm in zip(names, normalized):
+            for genre, norm in zip(genres, normalized):
                 if norm == top_name:
-                    return name, names
+                    return genre, genres
     
-    return None, names
+    return None, genres
 
 
 def _build_consensus_prompt(
@@ -49,7 +49,7 @@ def _build_consensus_prompt(
     art_form: str,
     query_type: str,
     responses: List[FactCheckResponse],
-    majority_name: Optional[str],
+    majority_genre: Optional[str],
 ) -> str:
     """Build prompt for Claude to synthesize responses."""
     decade_label = f"{decade}s"
@@ -58,7 +58,13 @@ def _build_consensus_prompt(
     provider_info = []
     for r in responses:
         if r.success:
-            provider_info.append(f"- {r.provider.upper()}: \"{r.art_name}\" - {r.brief_reason}")
+            provider_info.append(
+                f"- {r.provider.upper()}:\n"
+                f"  Genre: {r.genre}\n"
+                f"  Artists: {r.artists}\n"
+                f"  Example: {r.example_work}\n"
+                f"  Reason: {r.brief_reason}"
+            )
         else:
             provider_info.append(f"- {r.provider.upper()}: (failed: {r.error})")
     
@@ -66,26 +72,30 @@ def _build_consensus_prompt(
     
     type_label = "most popular" if query_type == "popular" else "most timeless/enduring"
     
-    if majority_name:
-        return f"""Three AI sources were asked about the {type_label} {art_form.lower()} from {region} in the {decade_label}.
+    if majority_genre:
+        return f"""Three AI sources were asked about the {type_label} {art_form.lower()} genre from {region} in the {decade_label}.
 
 Their responses:
 {provider_text}
 
-The majority agreed on: "{majority_name}"
+The majority agreed on genre: "{majority_genre}"
 
-Write a short, engaging description (2-3 sentences max) about this work. Be casual and friendly - focus on what makes it surprising, juicy, or fascinating. No formal academic tone. Start directly with the interesting bit, don't say "This work..." or similar."""
+Based on these responses, provide:
+1. The genre name (use the majority)
+2. The most notable artists mentioned (combine the best from all sources)
+3. Pick the best example work mentioned
+4. Write a short, engaging description (2-3 sentences) about this genre and why it mattered. Be casual and friendly - focus on what makes it surprising, juicy, or fascinating. No formal academic tone."""
     else:
-        return f"""Three AI sources were asked about the {type_label} {art_form.lower()} from {region} in the {decade_label}.
+        return f"""Three AI sources were asked about the {type_label} {art_form.lower()} genre from {region} in the {decade_label}.
 
 Their responses:
 {provider_text}
 
-There's no clear majority. Using your judgment, pick the most accurate/notable choice and write a short, engaging description (2-3 sentences max). Be casual and friendly - focus on what makes it surprising, juicy, or fascinating. No formal academic tone.
-
-Format your response as:
-CHOICE: "Name of Work" by Artist
-DESCRIPTION: Your engaging description here"""
+There's no clear majority on genre. Using your judgment:
+1. Pick the most accurate/notable genre
+2. List the most notable artists
+3. Pick the best example work
+4. Write a short, engaging description (2-3 sentences) about this genre and why it mattered. Be casual and friendly."""
 
 
 async def synthesize_with_claude(
@@ -104,8 +114,8 @@ async def synthesize_with_claude(
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
     
     # Find majorities
-    popular_majority, popular_names = _find_majority(popular_responses)
-    timeless_majority, timeless_names = _find_majority(timeless_responses)
+    popular_majority, popular_genres = _find_majority_genre(popular_responses)
+    timeless_majority, timeless_genres = _find_majority_genre(timeless_responses)
     
     # Build prompts
     popular_prompt = _build_consensus_prompt(
@@ -116,7 +126,7 @@ async def synthesize_with_claude(
     )
     
     # Combined prompt to save on API calls
-    combined_prompt = f"""I need you to write two short descriptions for an art exploration app.
+    combined_prompt = f"""I need you to synthesize information about art genres for an art exploration app.
 
 === TASK 1: MOST POPULAR ===
 {popular_prompt}
@@ -125,15 +135,19 @@ async def synthesize_with_claude(
 {timeless_prompt}
 
 Format your response exactly like this:
-POPULAR_NAME: [name of the work]
+POPULAR_GENRE: [genre name]
+POPULAR_ARTISTS: [artist names, comma separated]
+POPULAR_EXAMPLE: [specific work title by artist]
 POPULAR_DESCRIPTION: [your engaging 2-3 sentence description]
 
-TIMELESS_NAME: [name of the work]  
+TIMELESS_GENRE: [genre name]
+TIMELESS_ARTISTS: [artist names, comma separated]
+TIMELESS_EXAMPLE: [specific work title by artist]
 TIMELESS_DESCRIPTION: [your engaging 2-3 sentence description]"""
 
     response = await client.messages.create(
         model="claude-3-5-haiku-20241022",  # Fast & cheap: $1/M in, $5/M out
-        max_tokens=500,
+        max_tokens=700,
         messages=[
             {
                 "role": "user",
@@ -145,8 +159,8 @@ TIMELESS_DESCRIPTION: [your engaging 2-3 sentence description]"""
     # Parse response
     text = response.content[0].text
     
-    popular_entry = _parse_claude_response(text, "POPULAR", popular_majority, popular_names)
-    timeless_entry = _parse_claude_response(text, "TIMELESS", timeless_majority, timeless_names)
+    popular_entry = _parse_claude_response(text, "POPULAR", popular_responses)
+    timeless_entry = _parse_claude_response(text, "TIMELESS", timeless_responses)
     
     return popular_entry, timeless_entry
 
@@ -154,26 +168,41 @@ TIMELESS_DESCRIPTION: [your engaging 2-3 sentence description]"""
 def _parse_claude_response(
     text: str, 
     prefix: str, 
-    majority_name: Optional[str],
-    all_names: List[str],
+    responses: List[FactCheckResponse],
 ) -> ArtEntry:
-    """Parse Claude's response to extract name and description."""
+    """Parse Claude's response to extract genre, artists, example, and description."""
     lines = text.split('\n')
     
-    name = ""
+    genre = ""
+    artists = ""
+    example_work = ""
     description = ""
     
     for line in lines:
         line = line.strip()
-        if line.startswith(f"{prefix}_NAME:"):
-            name = line.replace(f"{prefix}_NAME:", "").strip()
+        if line.startswith(f"{prefix}_GENRE:"):
+            genre = line.replace(f"{prefix}_GENRE:", "").strip()
+        elif line.startswith(f"{prefix}_ARTISTS:"):
+            artists = line.replace(f"{prefix}_ARTISTS:", "").strip()
+        elif line.startswith(f"{prefix}_EXAMPLE:"):
+            example_work = line.replace(f"{prefix}_EXAMPLE:", "").strip()
         elif line.startswith(f"{prefix}_DESCRIPTION:"):
             description = line.replace(f"{prefix}_DESCRIPTION:", "").strip()
     
-    # Fallbacks
-    if not name:
-        name = majority_name or (all_names[0] if all_names else "Unknown Work")
+    # Fallbacks from provider responses
+    successful = [r for r in responses if r.success]
+    if not genre and successful:
+        genre = successful[0].genre or "Unknown Genre"
+    if not artists and successful:
+        artists = successful[0].artists or "Various Artists"
+    if not example_work and successful:
+        example_work = successful[0].example_work or "Notable Work"
     if not description:
-        description = "A notable work from this period."
+        description = "A notable genre from this period."
     
-    return ArtEntry(name=name, description=description)
+    return ArtEntry(
+        genre=genre or "Unknown Genre",
+        artists=artists or "Various Artists", 
+        exampleWork=example_work or "Notable Work",
+        description=description
+    )

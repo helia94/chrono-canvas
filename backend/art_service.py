@@ -47,9 +47,10 @@ class ArtService:
                 if needs_popular_image or needs_timeless_image:
                     logger.info(f"Cache hit but missing images, fetching from Met API...")
                     try:
+                        # Use exampleWork for image search
                         popular_image, timeless_image = await search_artwork_images(
-                            cached.popular.name,
-                            cached.timeless.name,
+                            cached.popular.exampleWork,
+                            cached.timeless.exampleWork,
                             art_form
                         )
                         
@@ -60,7 +61,9 @@ class ArtService:
                         
                         if needs_popular_image and popular_image:
                             popular_entry = ArtEntry(
-                                name=cached.popular.name,
+                                genre=cached.popular.genre,
+                                artists=cached.popular.artists,
+                                exampleWork=cached.popular.exampleWork,
                                 description=cached.popular.description,
                                 image=ArtImage(
                                     url=popular_image.thumbnail_url,
@@ -71,7 +74,9 @@ class ArtService:
                         
                         if needs_timeless_image and timeless_image:
                             timeless_entry = ArtEntry(
-                                name=cached.timeless.name,
+                                genre=cached.timeless.genre,
+                                artists=cached.timeless.artists,
+                                exampleWork=cached.timeless.exampleWork,
                                 description=cached.timeless.description,
                                 image=ArtImage(
                                     url=timeless_image.thumbnail_url,
@@ -135,16 +140,19 @@ class ArtService:
         # Step 5: Fetch artwork images from Met API (for Visual Arts only)
         try:
             logger.info("Fetching artwork images from Met API...")
+            # Use exampleWork for image search
             popular_image, timeless_image = await search_artwork_images(
-                popular_entry.name,
-                timeless_entry.name,
+                popular_entry.exampleWork,
+                timeless_entry.exampleWork,
                 art_form
             )
             
             # Add images to entries
             if popular_image:
                 popular_entry = ArtEntry(
-                    name=popular_entry.name,
+                    genre=popular_entry.genre,
+                    artists=popular_entry.artists,
+                    exampleWork=popular_entry.exampleWork,
                     description=popular_entry.description,
                     image=ArtImage(
                         url=popular_image.thumbnail_url,
@@ -154,7 +162,9 @@ class ArtService:
             
             if timeless_image:
                 timeless_entry = ArtEntry(
-                    name=timeless_entry.name,
+                    genre=timeless_entry.genre,
+                    artists=timeless_entry.artists,
+                    exampleWork=timeless_entry.exampleWork,
                     description=timeless_entry.description,
                     image=ArtImage(
                         url=timeless_image.thumbnail_url,
@@ -195,4 +205,3 @@ class ArtService:
 
 # Singleton instance
 art_service = ArtService()
-

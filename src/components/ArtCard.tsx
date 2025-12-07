@@ -23,11 +23,21 @@ const ArtCard = ({ title, entry, isLoading }: ArtCardProps) => {
         </div>
       ) : entry ? (
         <div className="flex-1 flex flex-col">
-          <h4 className="font-display text-base md:text-lg font-light text-foreground mb-2 leading-snug">
-            {entry.name}
+          {/* Genre as main title */}
+          <h4 className="font-display text-base md:text-lg font-light text-foreground mb-1 leading-snug">
+            {entry.genre}
           </h4>
-          <p className="font-body text-xs text-muted-foreground leading-relaxed line-clamp-4">
+          {/* Artists */}
+          <p className="font-body text-xs text-primary mb-2">
+            {entry.artists}
+          </p>
+          {/* Description */}
+          <p className="font-body text-xs text-muted-foreground leading-relaxed line-clamp-3">
             {entry.description}
+          </p>
+          {/* Example work */}
+          <p className="font-body text-[10px] text-muted-foreground/70 mt-2 italic">
+            Notable: {entry.exampleWork}
           </p>
         </div>
       ) : (

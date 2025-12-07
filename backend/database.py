@@ -25,13 +25,17 @@ class ArtCache(Base):
     art_form = Column(String(100), primary_key=True)
     
     # Popular art entry
-    popular_name = Column(String(500), nullable=False)
+    popular_genre = Column(String(200), nullable=False)
+    popular_artists = Column(String(500), nullable=False)
+    popular_example_work = Column(String(500), nullable=False)
     popular_description = Column(Text, nullable=False)
     popular_image_url = Column(String(1000), nullable=True)
     popular_image_source_url = Column(String(1000), nullable=True)
     
     # Timeless art entry
-    timeless_name = Column(String(500), nullable=False)
+    timeless_genre = Column(String(200), nullable=False)
+    timeless_artists = Column(String(500), nullable=False)
+    timeless_example_work = Column(String(500), nullable=False)
     timeless_description = Column(Text, nullable=False)
     timeless_image_url = Column(String(1000), nullable=True)
     timeless_image_source_url = Column(String(1000), nullable=True)
@@ -72,15 +76,14 @@ async def init_db():
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    # Run migrations for existing tables (add new columns if missing)
+    # Drop old cache table and recreate with new schema
+    # This is a one-time migration for the new genre/artists/exampleWork structure
     async with _engine.begin() as conn:
-        await conn.execute(text("""
-            ALTER TABLE chrono_art_cache 
-            ADD COLUMN IF NOT EXISTS popular_image_url VARCHAR(1000),
-            ADD COLUMN IF NOT EXISTS popular_image_source_url VARCHAR(1000),
-            ADD COLUMN IF NOT EXISTS timeless_image_url VARCHAR(1000),
-            ADD COLUMN IF NOT EXISTS timeless_image_source_url VARCHAR(1000)
-        """))
+        await conn.execute(text("DROP TABLE IF EXISTS chrono_art_cache"))
+    
+    # Recreate tables with new schema
+    async with _engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     
     return _engine
 

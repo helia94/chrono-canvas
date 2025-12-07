@@ -12,7 +12,9 @@ export interface ArtImage {
 }
 
 export interface ArtEntry {
-  name: string;
+  genre: string;
+  artists: string;
+  exampleWork: string;
   description: string;
   image?: ArtImage | null;
 }

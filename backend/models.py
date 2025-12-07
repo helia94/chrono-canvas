@@ -11,10 +11,17 @@ class ArtImage(BaseModel):
 
 
 class ArtEntry(BaseModel):
-    """A single art entry with name, description, and optional image."""
-    name: str
-    description: str
+    """Art entry with genre, artists, example work, and optional image."""
+    genre: str  # e.g., "Surrealism", "Jazz", "Magical Realism"
+    artists: str  # Prominent artist(s) of this genre
+    exampleWork: str  # Specific work for image/album search
+    description: str  # About the genre and its significance
     image: Optional[ArtImage] = None
+    
+    # For backwards compatibility, expose 'name' as alias for exampleWork
+    @property
+    def name(self) -> str:
+        return self.exampleWork
 
 
 class ArtData(BaseModel):

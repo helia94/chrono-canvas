@@ -52,12 +52,16 @@ class CacheLayer:
                         region=cached.region,
                         artForm=cached.art_form,
                         popular=ArtEntry(
-                            name=cached.popular_name,
+                            genre=cached.popular_genre,
+                            artists=cached.popular_artists,
+                            exampleWork=cached.popular_example_work,
                             description=cached.popular_description,
                             image=popular_image,
                         ),
                         timeless=ArtEntry(
-                            name=cached.timeless_name,
+                            genre=cached.timeless_genre,
+                            artists=cached.timeless_artists,
+                            exampleWork=cached.timeless_example_work,
                             description=cached.timeless_description,
                             image=timeless_image,
                         ),
@@ -90,11 +94,15 @@ class CacheLayer:
                 
                 if existing:
                     # Update existing
-                    existing.popular_name = data.popular.name
+                    existing.popular_genre = data.popular.genre
+                    existing.popular_artists = data.popular.artists
+                    existing.popular_example_work = data.popular.exampleWork
                     existing.popular_description = data.popular.description
                     existing.popular_image_url = popular_image_url
                     existing.popular_image_source_url = popular_image_source
-                    existing.timeless_name = data.timeless.name
+                    existing.timeless_genre = data.timeless.genre
+                    existing.timeless_artists = data.timeless.artists
+                    existing.timeless_example_work = data.timeless.exampleWork
                     existing.timeless_description = data.timeless.description
                     existing.timeless_image_url = timeless_image_url
                     existing.timeless_image_source_url = timeless_image_source
@@ -104,11 +112,15 @@ class CacheLayer:
                         decade=data.decade,
                         region=data.region,
                         art_form=data.artForm,
-                        popular_name=data.popular.name,
+                        popular_genre=data.popular.genre,
+                        popular_artists=data.popular.artists,
+                        popular_example_work=data.popular.exampleWork,
                         popular_description=data.popular.description,
                         popular_image_url=popular_image_url,
                         popular_image_source_url=popular_image_source,
-                        timeless_name=data.timeless.name,
+                        timeless_genre=data.timeless.genre,
+                        timeless_artists=data.timeless.artists,
+                        timeless_example_work=data.timeless.exampleWork,
                         timeless_description=data.timeless.description,
                         timeless_image_url=timeless_image_url,
                         timeless_image_source_url=timeless_image_source,
