@@ -19,7 +19,8 @@ const CONFIG: ConfigResponse = {
     "North America",
     "Latin America",
     "East Asia",
-    "Africa & Middle East",
+    "Middle East",
+    "Africa",
   ],
   artForms: ["Visual Arts", "Music", "Literature"],
   timePeriods: [

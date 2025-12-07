@@ -65,22 +65,26 @@ const regionToBackendRegion: Record<string, string> = {
   "North America": "North America",
   "Latin America": "Latin America",
   "East Asia": "East Asia",
+  "Middle East": "Middle East",
+  "Africa": "Africa",
   
   // Europe mappings
   "Southern Europe & Mediterranean": "Western Europe",
   "Eastern Europe & Balkans": "Eastern Europe",
   "Russia & Central Asia": "Eastern Europe",
   
-  // Africa & Middle East mappings
-  "Middle East & North Africa": "Africa & Middle East",
-  "Sub-Saharan Africa — West/Central": "Africa & Middle East",
-  "Sub-Saharan Africa — East/South": "Africa & Middle East",
+  // Middle East mappings (from PaperGlobe)
+  "Middle East & North Africa": "Middle East",
+  
+  // Africa mappings (from PaperGlobe)
+  "Sub-Saharan Africa — West/Central": "Africa",
+  "Sub-Saharan Africa — East/South": "Africa",
   
   // Asia mappings
   "South Asia": "East Asia",
   "Southeast Asia": "East Asia",
   
-  // Oceania mapping (closest culturally to Western heritage for art history)
+  // Oceania mapping
   "Oceania": "East Asia",
 };
 
