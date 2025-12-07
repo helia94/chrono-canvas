@@ -132,7 +132,7 @@ TIMELESS_NAME: [name of the work]
 TIMELESS_DESCRIPTION: [your engaging 2-3 sentence description]"""
 
     response = await client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-haiku-20241022",  # Fast & cheap: $1/M in, $5/M out
         max_tokens=500,
         messages=[
             {

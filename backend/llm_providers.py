@@ -158,7 +158,7 @@ class PerplexityProvider(LLMProvider):
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "llama-3.1-sonar-small-128k-online",
+                        "model": "sonar",  # Fast & cheap online search model
                         "messages": [
                             {"role": "system", "content": "You are a concise art history expert. Give brief, factual answers."},
                             {"role": "user", "content": prompt},
@@ -212,7 +212,7 @@ class XAIProvider(LLMProvider):
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "grok-beta",
+                        "model": "grok-3-mini",  # Fast & cheap: $0.30/M in, $0.50/M out
                         "messages": [
                             {"role": "system", "content": "You are a concise art history expert. Give brief, factual answers."},
                             {"role": "user", "content": prompt},
