@@ -4,7 +4,9 @@ import DecadeSlider from "@/components/DecadeSlider";
 import PaperGlobe from "@/components/PaperGlobe";
 import ArtFormSelector from "@/components/ArtFormSelector";
 import ArtDisplay from "@/components/ArtDisplay";
+import VisualArtGallery from "@/components/VisualArtGallery";
 import { useConfig } from "@/hooks/useConfig";
+import { useArtData } from "@/hooks/useArtData";
 import { type TimePeriod, type Region, type ArtForm } from "@/lib/api";
 
 const Index = () => {
@@ -15,9 +17,18 @@ const Index = () => {
   const [selectedRegion, setSelectedRegion] = useState<Region>("Western Europe");
   const [selectedArtForm, setSelectedArtForm] = useState<ArtForm>("Visual Arts");
 
+  // Fetch art data using shared hook
+  const { artData, isLoading, showLoadingHint } = useArtData(
+    selectedDecade,
+    selectedRegion,
+    selectedArtForm
+  );
+
   // Use config values or defaults
   const timePeriods = config?.timePeriods ?? [];
   const artForms = config?.artForms ?? [];
+
+  const isVisualArts = selectedArtForm === "Visual Arts";
 
   if (configLoading && !config) {
     return (
@@ -32,6 +43,7 @@ const Index = () => {
       <main className="max-w-6xl mx-auto px-2">
         <Header />
         
+        {/* Decade slider */}
         <section>
           <DecadeSlider
             timePeriods={timePeriods}
@@ -40,28 +52,41 @@ const Index = () => {
           />
         </section>
 
-        <section className="flex flex-col lg:flex-row items-center justify-center gap-4">
-          <div className="flex-shrink-0">
+        {/* Art form selector */}
+        <section className="mb-4">
+          <ArtFormSelector
+            artForms={artForms}
+            selectedArtForm={selectedArtForm}
+            onArtFormChange={setSelectedArtForm}
+          />
+        </section>
+
+        {/* Row 1: Globe + Text Cards */}
+        <section className="flex flex-col lg:flex-row items-start justify-center gap-4 lg:gap-6 mb-6">
+          <div className="flex-shrink-0 self-center lg:self-start">
             <PaperGlobe
               selectedRegion={selectedRegion}
               onRegionChange={setSelectedRegion}
             />
           </div>
           
-          <div className="flex-1 max-w-xl">
-            <ArtFormSelector
-              artForms={artForms}
-              selectedArtForm={selectedArtForm}
-              onArtFormChange={setSelectedArtForm}
-            />
-            <ArtDisplay
-              decade={selectedDecade}
-              region={selectedRegion}
-              artForm={selectedArtForm}
-              showImages={true}
-            />
-          </div>
+          <ArtDisplay
+            artData={artData}
+            isLoading={isLoading}
+            showLoadingHint={showLoadingHint}
+          />
         </section>
+
+        {/* Row 2: Image Gallery (Visual Arts only) */}
+        {isVisualArts && (
+          <section>
+            <VisualArtGallery
+              popular={artData?.popular || null}
+              timeless={artData?.timeless || null}
+              isLoading={isLoading}
+            />
+          </section>
+        )}
       </main>
     </div>
   );
