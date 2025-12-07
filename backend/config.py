@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"  # Ignore unknown env vars (e.g., VITE_API_URL from frontend)
 
 
 @lru_cache

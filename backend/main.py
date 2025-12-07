@@ -8,9 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from database import init_db, close_db
-from models import ConfigResponse, ArtDataResponse
+from models import ArtDataResponse
 from art_service import art_service
-from data import REGIONS, ART_FORMS, TIME_PERIODS
+from data import validate_inputs
 
 # Configure logging
 logging.basicConfig(
@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ChronoCanvas API",
     description="API for exploring art through different time periods and regions",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
 )
 
@@ -62,19 +62,7 @@ app.add_middleware(
 @app.get("/")
 async def root():
     """Health check endpoint."""
-    return {"status": "ok", "message": "ChronoCanvas API is running", "version": "2.0.0"}
-
-
-@app.get("/api/config", response_model=ConfigResponse)
-async def get_config():
-    """
-    Get configuration data including available regions, art forms, and time periods.
-    """
-    return ConfigResponse(
-        regions=REGIONS,
-        artForms=ART_FORMS,
-        timePeriods=TIME_PERIODS,
-    )
+    return {"status": "ok", "message": "ChronoCanvas API is running", "version": "2.1.0"}
 
 
 @app.get("/api/art", response_model=ArtDataResponse)
@@ -87,20 +75,22 @@ async def get_art(
     Get art data for a specific decade, region, and art form.
     
     This endpoint:
-    1. Checks the cache for existing data
-    2. If not cached, queries multiple LLM providers for fact-checking
-    3. Uses Claude to synthesize responses and write engaging descriptions
-    4. Caches the result for future requests
+    1. Sanitizes and validates inputs (basic protection, no value restrictions)
+    2. Checks the cache for existing data
+    3. If not cached, queries multiple LLM providers for fact-checking
+    4. Uses Claude to synthesize responses and write engaging descriptions
+    5. Caches the result for future requests
+    
+    The frontend is the source of truth for available values.
+    The backend accepts any reasonable input and caches the results.
     
     Returns both the 'popular' art of the decade and the 'timeless' work.
     """
-    # Validate inputs
-    if decade not in TIME_PERIODS:
-        raise HTTPException(status_code=400, detail=f"Invalid decade: {decade}")
-    if region not in REGIONS:
-        raise HTTPException(status_code=400, detail=f"Invalid region: {region}")
-    if artForm not in ART_FORMS:
-        raise HTTPException(status_code=400, detail=f"Invalid art form: {artForm}")
+    # Sanitize inputs (defense in depth, SQLAlchemy already uses parameterized queries)
+    try:
+        decade, region, artForm = validate_inputs(decade, region, artForm)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     
     try:
         data = await art_service.get_art(decade, region, artForm)

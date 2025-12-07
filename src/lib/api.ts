@@ -36,14 +36,39 @@ export type TimePeriod = string;
 export type Decade = TimePeriod; // Alias for backwards compatibility
 
 /**
- * Fetch configuration data (regions, art forms, time periods)
+ * Map detailed frontend regions to backend regions
+ * The frontend (PaperGlobe) uses more granular regions than the backend supports
  */
-export async function fetchConfig(): Promise<ConfigResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/config`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch config: ${response.statusText}`);
-  }
-  return response.json();
+const regionToBackendRegion: Record<string, string> = {
+  // Direct matches
+  "Western Europe": "Western Europe",
+  "North America": "North America",
+  "Latin America": "Latin America",
+  "East Asia": "East Asia",
+  
+  // Europe mappings
+  "Southern Europe & Mediterranean": "Western Europe",
+  "Eastern Europe & Balkans": "Eastern Europe",
+  "Russia & Central Asia": "Eastern Europe",
+  
+  // Africa & Middle East mappings
+  "Middle East & North Africa": "Africa & Middle East",
+  "Sub-Saharan Africa — West/Central": "Africa & Middle East",
+  "Sub-Saharan Africa — East/South": "Africa & Middle East",
+  
+  // Asia mappings
+  "South Asia": "East Asia",
+  "Southeast Asia": "East Asia",
+  
+  // Oceania mapping (closest culturally to Western heritage for art history)
+  "Oceania": "East Asia",
+};
+
+/**
+ * Convert frontend region to backend region
+ */
+export function toBackendRegion(frontendRegion: string): string {
+  return regionToBackendRegion[frontendRegion] || frontendRegion;
 }
 
 /**

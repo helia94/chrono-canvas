@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchArtData, type ArtData, type Region, type ArtForm, type TimePeriod } from "@/lib/api";
+import { fetchArtData, toBackendRegion, type ArtData, type Region, type ArtForm, type TimePeriod } from "@/lib/api";
 import ArtCard from "./ArtCard";
 
 interface ArtDisplayProps {
@@ -18,7 +18,9 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
     
     const loadData = async () => {
       try {
-        const response = await fetchArtData(decade, region, artForm);
+        // Map detailed frontend region to backend region
+        const backendRegion = toBackendRegion(region);
+        const response = await fetchArtData(decade, backendRegion, artForm);
         if (!isCancelled) {
           setArtData(response.data);
         }
