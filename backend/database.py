@@ -17,7 +17,7 @@ class Base(DeclarativeBase):
 class ArtCache(Base):
     """Cache table for art data."""
     
-    __tablename__ = "art_cache"
+    __tablename__ = "chrono_art_cache"
     
     # Composite primary key
     decade = Column(String(10), primary_key=True)
@@ -38,7 +38,7 @@ class ArtCache(Base):
     
     # Index for faster lookups
     __table_args__ = (
-        Index('idx_art_cache_lookup', 'decade', 'region', 'art_form'),
+        Index('idx_chrono_art_cache_lookup', 'decade', 'region', 'art_form'),
     )
 
 
