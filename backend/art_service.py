@@ -6,7 +6,8 @@ from typing import Optional
 from cache import cache_layer
 from llm_providers import query_all_providers
 from consensus import synthesize_with_claude
-from models import ArtData
+from met_api import search_artwork_images
+from models import ArtData, ArtEntry, ArtImage
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,9 @@ class ArtService:
     1. Check cache for existing data
     2. If not cached, query 3 LLM providers in parallel
     3. Send responses to Claude for consensus and final writing
-    4. Cache the result
-    5. Return to user
+    4. Fetch artwork images from Met API (for Visual Arts)
+    5. Cache the result
+    6. Return to user
     """
     
     async def get_art(self, decade: str, region: str, art_form: str) -> Optional[ArtData]:
@@ -72,7 +74,40 @@ class ArtService:
             logger.error(f"Error synthesizing with Claude: {e}")
             return None
         
-        # Step 5: Build result
+        # Step 5: Fetch artwork images from Met API (for Visual Arts only)
+        try:
+            logger.info("Fetching artwork images from Met API...")
+            popular_image, timeless_image = await search_artwork_images(
+                popular_entry.name,
+                timeless_entry.name,
+                art_form
+            )
+            
+            # Add images to entries
+            if popular_image:
+                popular_entry = ArtEntry(
+                    name=popular_entry.name,
+                    description=popular_entry.description,
+                    image=ArtImage(
+                        url=popular_image.thumbnail_url,
+                        sourceUrl=popular_image.source_url,
+                    )
+                )
+            
+            if timeless_image:
+                timeless_entry = ArtEntry(
+                    name=timeless_entry.name,
+                    description=timeless_entry.description,
+                    image=ArtImage(
+                        url=timeless_image.thumbnail_url,
+                        sourceUrl=timeless_image.source_url,
+                    )
+                )
+        except Exception as e:
+            logger.warning(f"Failed to fetch artwork images: {e}")
+            # Continue without images - they're optional
+        
+        # Step 6: Build result
         result = ArtData(
             decade=decade,
             region=region,
@@ -81,7 +116,7 @@ class ArtService:
             timeless=timeless_entry,
         )
         
-        # Step 6: Cache the result
+        # Step 7: Cache the result
         try:
             await cache_layer.set(result)
             logger.info(f"Cached result for {decade}/{region}/{art_form}")

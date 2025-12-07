@@ -6,9 +6,15 @@
 // Default: Production Railway API, override with VITE_API_URL=http://localhost:8000 for local dev
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://chronocanvas-api-production.up.railway.app";
 
+export interface ArtImage {
+  url: string;
+  sourceUrl?: string;
+}
+
 export interface ArtEntry {
   name: string;
   description: string;
+  image?: ArtImage | null;
 }
 
 export interface ArtData {

@@ -8,7 +8,7 @@ interface ArtCardProps {
 
 const ArtCard = ({ title, entry, isLoading }: ArtCardProps) => {
   return (
-    <div className="paper-card p-4 md:p-5 min-h-[180px] flex flex-col paper-fold-enter">
+    <div className="paper-card p-4 md:p-5 min-h-[140px] flex flex-col paper-fold-enter">
       {/* Ochre accent line */}
       <div className="w-8 h-0.5 bg-primary mb-3" />
       

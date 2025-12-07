@@ -58,6 +58,7 @@ const Index = () => {
               decade={selectedDecade}
               region={selectedRegion}
               artForm={selectedArtForm}
+              showImages={true}
             />
           </div>
         </section>

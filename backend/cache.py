@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import ArtCache, get_session
-from models import ArtData, ArtEntry
+from models import ArtData, ArtEntry, ArtImage
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,21 @@ class CacheLayer:
                 cached = result.scalar_one_or_none()
                 
                 if cached:
+                    # Build image objects if URLs exist
+                    popular_image = None
+                    if cached.popular_image_url:
+                        popular_image = ArtImage(
+                            url=cached.popular_image_url,
+                            sourceUrl=cached.popular_image_source_url,
+                        )
+                    
+                    timeless_image = None
+                    if cached.timeless_image_url:
+                        timeless_image = ArtImage(
+                            url=cached.timeless_image_url,
+                            sourceUrl=cached.timeless_image_source_url,
+                        )
+                    
                     return ArtData(
                         decade=cached.decade,
                         region=cached.region,
@@ -39,10 +54,12 @@ class CacheLayer:
                         popular=ArtEntry(
                             name=cached.popular_name,
                             description=cached.popular_description,
+                            image=popular_image,
                         ),
                         timeless=ArtEntry(
                             name=cached.timeless_name,
                             description=cached.timeless_description,
+                            image=timeless_image,
                         ),
                     )
                 
@@ -65,12 +82,22 @@ class CacheLayer:
                 )
                 existing = result.scalar_one_or_none()
                 
+                # Extract image data
+                popular_image_url = data.popular.image.url if data.popular.image else None
+                popular_image_source = data.popular.image.sourceUrl if data.popular.image else None
+                timeless_image_url = data.timeless.image.url if data.timeless.image else None
+                timeless_image_source = data.timeless.image.sourceUrl if data.timeless.image else None
+                
                 if existing:
                     # Update existing
                     existing.popular_name = data.popular.name
                     existing.popular_description = data.popular.description
+                    existing.popular_image_url = popular_image_url
+                    existing.popular_image_source_url = popular_image_source
                     existing.timeless_name = data.timeless.name
                     existing.timeless_description = data.timeless.description
+                    existing.timeless_image_url = timeless_image_url
+                    existing.timeless_image_source_url = timeless_image_source
                 else:
                     # Insert new
                     cache_entry = ArtCache(
@@ -79,8 +106,12 @@ class CacheLayer:
                         art_form=data.artForm,
                         popular_name=data.popular.name,
                         popular_description=data.popular.description,
+                        popular_image_url=popular_image_url,
+                        popular_image_source_url=popular_image_source,
                         timeless_name=data.timeless.name,
                         timeless_description=data.timeless.description,
+                        timeless_image_url=timeless_image_url,
+                        timeless_image_source_url=timeless_image_source,
                     )
                     session.add(cache_entry)
                 

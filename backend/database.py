@@ -21,16 +21,20 @@ class ArtCache(Base):
     
     # Composite primary key
     decade = Column(String(10), primary_key=True)
-    region = Column(String(50), primary_key=True)
-    art_form = Column(String(50), primary_key=True)
+    region = Column(String(100), primary_key=True)
+    art_form = Column(String(100), primary_key=True)
     
     # Popular art entry
     popular_name = Column(String(500), nullable=False)
     popular_description = Column(Text, nullable=False)
+    popular_image_url = Column(String(1000), nullable=True)
+    popular_image_source_url = Column(String(1000), nullable=True)
     
     # Timeless art entry
     timeless_name = Column(String(500), nullable=False)
     timeless_description = Column(Text, nullable=False)
+    timeless_image_url = Column(String(1000), nullable=True)
+    timeless_image_source_url = Column(String(1000), nullable=True)
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)

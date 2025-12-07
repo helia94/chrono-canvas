@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { fetchArtData, toBackendRegion, type ArtData, type Region, type ArtForm, type TimePeriod } from "@/lib/api";
 import ArtCard from "./ArtCard";
 import LoadingIndicator from "./LoadingIndicator";
+import VisualArtGallery from "./VisualArtGallery";
 
 interface ArtDisplayProps {
   decade: TimePeriod;
   region: Region;
   artForm: ArtForm;
+  showImages?: boolean;
 }
 
-const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
+const ArtDisplay = ({ decade, region, artForm, showImages = false }: ArtDisplayProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [artData, setArtData] = useState<ArtData | null>(null);
   const [showLoadingHint, setShowLoadingHint] = useState(false);
@@ -60,25 +62,38 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
     };
   }, [decade, region, artForm]);
 
+  const isVisualArts = artForm === "Visual Arts";
+
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-4 relative">
-      {/* Overlay indicator - doesn't affect layout */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-        <LoadingIndicator isVisible={showLoadingHint} />
+    <>
+      <div className="w-full max-w-4xl mx-auto px-4 py-4 relative">
+        {/* Overlay indicator - doesn't affect layout */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <LoadingIndicator isVisible={showLoadingHint} />
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+          <ArtCard
+            title="Most Popular of the Decade"
+            entry={artData?.popular || null}
+            isLoading={isLoading}
+          />
+          <ArtCard
+            title="Most Timeless"
+            entry={artData?.timeless || null}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
-      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-        <ArtCard
-          title="Most Popular of the Decade"
-          entry={artData?.popular || null}
+      
+      {/* Visual art gallery - shown below for Visual Arts */}
+      {showImages && isVisualArts && (
+        <VisualArtGallery
+          popular={artData?.popular || null}
+          timeless={artData?.timeless || null}
           isLoading={isLoading}
         />
-        <ArtCard
-          title="Most Timeless"
-          entry={artData?.timeless || null}
-          isLoading={isLoading}
-        />
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
