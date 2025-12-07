@@ -13,6 +13,8 @@ interface PaperGlobeProps {
   onRegionChange: (region: string) => void;
 }
 
+type SelectionMode = "regions" | "countries";
+
 // Map country names to regions (world-atlas uses NAME property)
 type Region =
   | "Western Europe"
@@ -271,6 +273,7 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [rotation, setRotation] = useState<[number, number]>([0, 0]);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>("regions");
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   const hasMoved = useRef(false);
 
@@ -320,9 +323,15 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
     // Only handle click if we didn't drag
     if (hasMoved.current) return;
     
-    const region = countryToRegion[countryName];
-    if (region) {
-      onRegionChange(region);
+    if (selectionMode === "countries") {
+      // Send country name directly
+      onRegionChange(countryName);
+    } else {
+      // Send region name (original behavior)
+      const region = countryToRegion[countryName];
+      if (region) {
+        onRegionChange(region);
+      }
     }
   };
 
@@ -341,6 +350,17 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
             {selectedRegion}
           </span>
         </div>
+
+        {/* Mode toggle - subtle button in top left */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectionMode(prev => prev === "regions" ? "countries" : "regions");
+          }}
+          className="absolute top-2 left-2 z-20 font-body text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors px-1.5 py-0.5 rounded border border-border/30 hover:border-border/50 bg-background/50"
+        >
+          {selectionMode === "regions" ? "regions" : "countries"}
+        </button>
 
         {/* Drag hint */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 opacity-50">
