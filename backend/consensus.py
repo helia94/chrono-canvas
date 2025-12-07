@@ -1,17 +1,12 @@
-"""Consensus layer - synthesizes responses from multiple providers."""
+"""Claude consensus layer - synthesizes responses from multiple providers."""
 
-import logging
 from typing import Optional, List, Tuple
-from collections import Counter
-
-from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
+from collections import Counter
 
 from config import get_settings
 from llm_providers import FactCheckResponse
 from models import ArtEntry
-
-logger = logging.getLogger(__name__)
 
 
 def _find_majority(responses: List[FactCheckResponse]) -> Tuple[Optional[str], List[str]]:
@@ -25,18 +20,22 @@ def _find_majority(responses: List[FactCheckResponse]) -> Tuple[Optional[str], L
     if not successful:
         return None, []
     
+    # Normalize names for comparison (lowercase, strip quotes)
     def normalize(name: str) -> str:
         return name.lower().strip().strip('"\'')
     
     names = [r.art_name for r in successful]
     normalized = [normalize(n) for n in names]
     
+    # Count occurrences
     counts = Counter(normalized)
     most_common = counts.most_common(1)
     
     if most_common:
         top_name, top_count = most_common[0]
+        # Majority = more than half
         if top_count > len(successful) / 2:
+            # Return the original (non-normalized) name
             for name, norm in zip(names, normalized):
                 if norm == top_name:
                     return name, names
@@ -52,88 +51,41 @@ def _build_consensus_prompt(
     responses: List[FactCheckResponse],
     majority_name: Optional[str],
 ) -> str:
-    """Build prompt for synthesis."""
+    """Build prompt for Claude to synthesize responses."""
     decade_label = f"{decade}s"
     
+    # Format provider responses
     provider_info = []
     for r in responses:
         if r.success:
             provider_info.append(f"- {r.provider.upper()}: \"{r.art_name}\" - {r.brief_reason}")
         else:
-            provider_info.append(f"- {r.provider.upper()}: (failed)")
+            provider_info.append(f"- {r.provider.upper()}: (failed: {r.error})")
     
     provider_text = "\n".join(provider_info)
+    
     type_label = "most popular" if query_type == "popular" else "most timeless/enduring"
     
     if majority_name:
-        return f"""Sources on the {type_label} {art_form.lower()} from {region} in the {decade_label}:
+        return f"""Three AI sources were asked about the {type_label} {art_form.lower()} from {region} in the {decade_label}.
+
+Their responses:
 {provider_text}
 
-Majority: "{majority_name}"
+The majority agreed on: "{majority_name}"
 
-Write 2-3 sentences about this work. Casual, friendly, surprising/juicy details. No formal tone."""
+Write a short, engaging description (2-3 sentences max) about this work. Be casual and friendly - focus on what makes it surprising, juicy, or fascinating. No formal academic tone. Start directly with the interesting bit, don't say "This work..." or similar."""
     else:
-        return f"""Sources on the {type_label} {art_form.lower()} from {region} in the {decade_label}:
+        return f"""Three AI sources were asked about the {type_label} {art_form.lower()} from {region} in the {decade_label}.
+
+Their responses:
 {provider_text}
 
-No majority. Pick the best choice and write 2-3 sentences. Casual, friendly, surprising/juicy.
+There's no clear majority. Using your judgment, pick the most accurate/notable choice and write a short, engaging description (2-3 sentences max). Be casual and friendly - focus on what makes it surprising, juicy, or fascinating. No formal academic tone.
 
-Format:
-CHOICE: "Name" by Artist
-DESCRIPTION: Your description"""
-
-
-async def _synthesize_with_openai(
-    combined_prompt: str,
-    popular_majority: Optional[str],
-    popular_names: List[str],
-    timeless_majority: Optional[str],
-    timeless_names: List[str],
-) -> Tuple[ArtEntry, ArtEntry]:
-    """Fallback to OpenAI for synthesis."""
-    settings = get_settings()
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
-    
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": combined_prompt}],
-        max_tokens=500,
-        temperature=0.7,
-    )
-    
-    text = response.choices[0].message.content or ""
-    logger.info(f"OpenAI response:\n{text[:500]}")
-    
-    popular_entry = _parse_response(text, "POPULAR", popular_majority, popular_names)
-    timeless_entry = _parse_response(text, "TIMELESS", timeless_majority, timeless_names)
-    
-    return popular_entry, timeless_entry
-
-
-async def _synthesize_with_claude(
-    combined_prompt: str,
-    popular_majority: Optional[str],
-    popular_names: List[str],
-    timeless_majority: Optional[str],
-    timeless_names: List[str],
-) -> Tuple[ArtEntry, ArtEntry]:
-    """Use Claude for synthesis."""
-    settings = get_settings()
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-    
-    response = await client.messages.create(
-        model="claude-3-5-haiku-20241022",  # Cheapest & fastest Claude
-        max_tokens=500,
-        messages=[{"role": "user", "content": combined_prompt}],
-    )
-    
-    text = response.content[0].text
-    logger.info(f"Claude response:\n{text[:500]}")
-    
-    popular_entry = _parse_response(text, "POPULAR", popular_majority, popular_names)
-    timeless_entry = _parse_response(text, "TIMELESS", timeless_majority, timeless_names)
-    
-    return popular_entry, timeless_entry
+Format your response as:
+CHOICE: "Name of Work" by Artist
+DESCRIPTION: Your engaging description here"""
 
 
 async def synthesize_with_claude(
@@ -144,12 +96,18 @@ async def synthesize_with_claude(
     timeless_responses: List[FactCheckResponse],
 ) -> Tuple[ArtEntry, ArtEntry]:
     """
-    Synthesize responses and write final descriptions.
-    Falls back to OpenAI if Claude fails.
+    Use Claude to synthesize responses and write final descriptions.
+    
+    Returns (popular_entry, timeless_entry).
     """
+    settings = get_settings()
+    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    
+    # Find majorities
     popular_majority, popular_names = _find_majority(popular_responses)
     timeless_majority, timeless_names = _find_majority(timeless_responses)
     
+    # Build prompts
     popular_prompt = _build_consensus_prompt(
         decade, region, art_form, "popular", popular_responses, popular_majority
     )
@@ -157,47 +115,49 @@ async def synthesize_with_claude(
         decade, region, art_form, "timeless", timeless_responses, timeless_majority
     )
     
-    combined_prompt = f"""You are writing for an art history website. Based on the sources below, provide the name and a short engaging description for each artwork/piece.
+    # Combined prompt to save on API calls
+    combined_prompt = f"""I need you to write two short descriptions for an art exploration app.
 
-=== MOST POPULAR WORK ===
+=== TASK 1: MOST POPULAR ===
 {popular_prompt}
 
-=== MOST TIMELESS WORK ===
+=== TASK 2: MOST TIMELESS ===
 {timeless_prompt}
 
-Respond in this exact format:
-POPULAR_NAME: [name of the artwork/album/book]
-POPULAR_DESCRIPTION: [2-3 casual, engaging sentences about this specific work]
+Format your response exactly like this:
+POPULAR_NAME: [name of the work]
+POPULAR_DESCRIPTION: [your engaging 2-3 sentence description]
 
-TIMELESS_NAME: [name of the artwork/album/book]
-TIMELESS_DESCRIPTION: [2-3 casual, engaging sentences about this specific work]"""
+TIMELESS_NAME: [name of the work]  
+TIMELESS_DESCRIPTION: [your engaging 2-3 sentence description]"""
 
-    settings = get_settings()
-    
-    # Try Claude first, fallback to OpenAI
-    if settings.anthropic_api_key:
-        try:
-            return await _synthesize_with_claude(
-                combined_prompt, popular_majority, popular_names,
-                timeless_majority, timeless_names
-            )
-        except Exception as e:
-            logger.warning(f"Claude failed, falling back to OpenAI: {e}")
-    
-    # Fallback to OpenAI
-    return await _synthesize_with_openai(
-        combined_prompt, popular_majority, popular_names,
-        timeless_majority, timeless_names
+    response = await client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=500,
+        messages=[
+            {
+                "role": "user",
+                "content": combined_prompt,
+            }
+        ],
     )
+    
+    # Parse response
+    text = response.content[0].text
+    
+    popular_entry = _parse_claude_response(text, "POPULAR", popular_majority, popular_names)
+    timeless_entry = _parse_claude_response(text, "TIMELESS", timeless_majority, timeless_names)
+    
+    return popular_entry, timeless_entry
 
 
-def _parse_response(
+def _parse_claude_response(
     text: str, 
     prefix: str, 
     majority_name: Optional[str],
     all_names: List[str],
 ) -> ArtEntry:
-    """Parse response to extract name and description."""
+    """Parse Claude's response to extract name and description."""
     lines = text.split('\n')
     
     name = ""
@@ -210,6 +170,7 @@ def _parse_response(
         elif line.startswith(f"{prefix}_DESCRIPTION:"):
             description = line.replace(f"{prefix}_DESCRIPTION:", "").strip()
     
+    # Fallbacks
     if not name:
         name = majority_name or (all_names[0] if all_names else "Unknown Work")
     if not description:
