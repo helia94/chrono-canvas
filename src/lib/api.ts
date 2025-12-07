@@ -3,7 +3,8 @@
  */
 
 // API base URL - configure this based on environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Default: Production Railway API, override with VITE_API_URL=http://localhost:8000 for local dev
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://chronocanvas-api-production.up.railway.app";
 
 export interface ArtEntry {
   name: string;
