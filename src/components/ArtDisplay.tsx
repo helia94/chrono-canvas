@@ -22,12 +22,12 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
     setIsLoading(true);
     setShowLoadingHint(false);
     
-    // Show hint after 1.5 seconds if still loading
+    // Show hint after 500ms if still loading
     const hintTimer = setTimeout(() => {
       if (!isCancelled && isLoadingRef.current) {
         setShowLoadingHint(true);
       }
-    }, 1500);
+    }, 500);
 
     const loadData = async () => {
       try {
@@ -61,8 +61,11 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
   }, [decade, region, artForm]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-4">
-      <LoadingIndicator isVisible={showLoadingHint} />
+    <div className="w-full max-w-4xl mx-auto px-4 py-4 relative">
+      {/* Overlay indicator - doesn't affect layout */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+        <LoadingIndicator isVisible={showLoadingHint} />
+      </div>
       <div className="grid md:grid-cols-2 gap-4 md:gap-6">
         <ArtCard
           title="Most Popular of the Decade"
