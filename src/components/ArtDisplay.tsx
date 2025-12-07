@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchArtData, toBackendRegion, type ArtData, type Region, type ArtForm, type TimePeriod } from "@/lib/api";
 import ArtCard from "./ArtCard";
 import LoadingModal from "./LoadingModal";
@@ -13,48 +13,49 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [artData, setArtData] = useState<ArtData | null>(null);
   const [showLoadingModal, setShowLoadingModal] = useState(false);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     let isCancelled = false;
-    let modalTimer: ReturnType<typeof setTimeout>;
     
+    isLoadingRef.current = true;
     setIsLoading(true);
     setShowLoadingModal(false);
     
+    // Show modal after 1.5 seconds if still loading (indicates AI generation)
+    const modalTimer = setTimeout(() => {
+      if (!isCancelled && isLoadingRef.current) {
+        setShowLoadingModal(true);
+      }
+    }, 1500);
+
     const loadData = async () => {
       try {
-        // Map detailed frontend region to backend region
         const backendRegion = toBackendRegion(region);
         const response = await fetchArtData(decade, backendRegion, artForm);
         if (!isCancelled) {
           setArtData(response.data);
-          setShowLoadingModal(false);
         }
       } catch (error) {
         console.error("Failed to fetch art data:", error);
         if (!isCancelled) {
           setArtData(null);
-          setShowLoadingModal(false);
         }
       } finally {
         if (!isCancelled) {
+          isLoadingRef.current = false;
           setIsLoading(false);
+          setShowLoadingModal(false);
         }
       }
     };
 
-    // Show modal after 1.5 seconds if still loading (indicates AI generation)
-    modalTimer = setTimeout(() => {
-      if (!isCancelled && isLoading) {
-        setShowLoadingModal(true);
-      }
-    }, 1500);
-
-    // Add small delay for smoother transition
+    // Small delay for smoother transition
     const timer = setTimeout(loadData, 300);
 
     return () => {
       isCancelled = true;
+      isLoadingRef.current = false;
       clearTimeout(timer);
       clearTimeout(modalTimer);
     };
