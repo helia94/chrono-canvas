@@ -36,33 +36,40 @@ const ArtCard = ({ title, entry, isLoading }: ArtCardProps) => {
           </p>
           {/* Description with expand/collapse */}
           <div className="relative">
-            <p className={`font-body text-xs text-muted-foreground leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}>
-              {entry.description}
+            <p className="font-body text-xs text-muted-foreground leading-relaxed">
+              {isExpanded ? entry.description : entry.description.slice(0, 150)}
+              {entry.description.length > 150 && !isExpanded && (
+                <button
+                  onClick={() => setIsExpanded(true)}
+                  className="text-primary hover:text-primary/70 transition-colors"
+                >
+                  ...
+                </button>
+              )}
+              {isExpanded && entry.description.length > 150 && (
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="text-primary/60 hover:text-primary/80 ml-1 transition-colors"
+                >
+                  ←
+                </button>
+              )}
             </p>
-            {entry.description.length > 150 && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="font-body text-xs text-primary hover:text-primary/80 mt-1 underline underline-offset-2"
-              >
-                {isExpanded ? 'Show less' : 'Read more'}
-              </button>
-            )}
           </div>
-          {/* Example work */}
-          <p className="font-body text-[10px] text-muted-foreground/70 mt-2 italic">
-            Notable: {entry.exampleWork}
+          {/* Example work - inline, web-native */}
+          <p className="font-body text-xs text-muted-foreground/80 mt-auto pt-2">
+            <span className="text-primary/70">{entry.exampleWork}</span>
+            {entry.blogUrl && (
+              <a
+                href={entry.blogUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 text-muted-foreground/50 hover:text-primary transition-colors"
+              >
+                ↗
+              </a>
+            )}
           </p>
-          {/* Blog link if available */}
-          {entry.blogUrl && (
-            <a
-              href={entry.blogUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-body text-[10px] text-primary hover:text-primary/80 mt-1 underline underline-offset-2"
-            >
-              📖 Read a personal perspective →
-            </a>
-          )}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
