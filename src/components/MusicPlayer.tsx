@@ -61,6 +61,11 @@ const SpotifyCard = ({ entry, label }: SpotifyCardProps) => {
           <p className="font-body text-xs text-muted-foreground truncate">
             {spotify.artist}
           </p>
+          {spotify.recordSales && (
+            <p className="font-body text-[10px] text-primary/80 mt-1">
+              📀 {spotify.recordSales}
+            </p>
+          )}
         </div>
         
         <a

@@ -37,6 +37,7 @@ class ArtCache(Base):
     popular_spotify_external_url = Column(String(500), nullable=True)
     popular_spotify_preview_url = Column(String(500), nullable=True)
     popular_spotify_album_image = Column(String(500), nullable=True)
+    popular_record_sales = Column(String(200), nullable=True)
     # Blog URL (personal perspective)
     popular_blog_url = Column(String(1000), nullable=True)
     
@@ -53,6 +54,7 @@ class ArtCache(Base):
     timeless_spotify_external_url = Column(String(500), nullable=True)
     timeless_spotify_preview_url = Column(String(500), nullable=True)
     timeless_spotify_album_image = Column(String(500), nullable=True)
+    timeless_record_sales = Column(String(200), nullable=True)
     # Blog URL (personal perspective)
     timeless_blog_url = Column(String(1000), nullable=True)
     
@@ -97,7 +99,9 @@ async def init_db():
         await conn.execute(text("""
             ALTER TABLE chrono_art_cache 
             ADD COLUMN IF NOT EXISTS popular_blog_url VARCHAR(1000),
-            ADD COLUMN IF NOT EXISTS timeless_blog_url VARCHAR(1000)
+            ADD COLUMN IF NOT EXISTS timeless_blog_url VARCHAR(1000),
+            ADD COLUMN IF NOT EXISTS popular_record_sales VARCHAR(200),
+            ADD COLUMN IF NOT EXISTS timeless_record_sales VARCHAR(200)
         """))
     
     return _engine

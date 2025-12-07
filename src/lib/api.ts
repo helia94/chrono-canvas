@@ -20,6 +20,7 @@ export interface SpotifyTrack {
   embedUrl: string;
   externalUrl: string;
   albumImageUrl?: string | null;
+  recordSales?: string | null;
 }
 
 export interface ArtEntry {

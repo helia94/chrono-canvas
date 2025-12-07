@@ -59,6 +59,7 @@ class CacheLayer:
                             embedUrl=cached.popular_spotify_embed_url or "",
                             externalUrl=cached.popular_spotify_external_url or "",
                             albumImageUrl=cached.popular_spotify_album_image,
+                            recordSales=getattr(cached, 'popular_record_sales', None),
                         )
                     
                     timeless_spotify = None
@@ -72,6 +73,7 @@ class CacheLayer:
                             embedUrl=cached.timeless_spotify_embed_url or "",
                             externalUrl=cached.timeless_spotify_external_url or "",
                             albumImageUrl=cached.timeless_spotify_album_image,
+                            recordSales=getattr(cached, 'timeless_record_sales', None),
                         )
                     
                     return ArtData(
@@ -140,6 +142,7 @@ class CacheLayer:
                     existing.popular_spotify_external_url = pop_spotify.externalUrl if pop_spotify else None
                     existing.popular_spotify_preview_url = pop_spotify.previewUrl if pop_spotify else None
                     existing.popular_spotify_album_image = pop_spotify.albumImageUrl if pop_spotify else None
+                    existing.popular_record_sales = pop_spotify.recordSales if pop_spotify else None
                     existing.popular_blog_url = data.popular.blogUrl
                     existing.timeless_genre = data.timeless.genre
                     existing.timeless_artists = data.timeless.artists
@@ -152,6 +155,7 @@ class CacheLayer:
                     existing.timeless_spotify_external_url = time_spotify.externalUrl if time_spotify else None
                     existing.timeless_spotify_preview_url = time_spotify.previewUrl if time_spotify else None
                     existing.timeless_spotify_album_image = time_spotify.albumImageUrl if time_spotify else None
+                    existing.timeless_record_sales = time_spotify.recordSales if time_spotify else None
                     existing.timeless_blog_url = data.timeless.blogUrl
                 else:
                     # Insert new
@@ -170,6 +174,7 @@ class CacheLayer:
                         popular_spotify_external_url=pop_spotify.externalUrl if pop_spotify else None,
                         popular_spotify_preview_url=pop_spotify.previewUrl if pop_spotify else None,
                         popular_spotify_album_image=pop_spotify.albumImageUrl if pop_spotify else None,
+                        popular_record_sales=pop_spotify.recordSales if pop_spotify else None,
                         popular_blog_url=data.popular.blogUrl,
                         timeless_genre=data.timeless.genre,
                         timeless_artists=data.timeless.artists,
@@ -182,6 +187,7 @@ class CacheLayer:
                         timeless_spotify_external_url=time_spotify.externalUrl if time_spotify else None,
                         timeless_spotify_preview_url=time_spotify.previewUrl if time_spotify else None,
                         timeless_spotify_album_image=time_spotify.albumImageUrl if time_spotify else None,
+                        timeless_record_sales=time_spotify.recordSales if time_spotify else None,
                         timeless_blog_url=data.timeless.blogUrl,
                     )
                     session.add(cache_entry)

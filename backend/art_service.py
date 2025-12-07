@@ -8,6 +8,7 @@ from llm_providers import query_all_providers
 from consensus import synthesize_with_claude
 from met_api import search_artwork_images
 from spotify_api import search_music_tracks
+from record_sales import lookup_sales_for_tracks
 from blog_search import start_background_blog_search
 from models import ArtData, ArtEntry, ArtImage, SpotifyTrack
 
@@ -240,6 +241,19 @@ class ArtService:
                     art_form
                 )
                 
+                # Look up record sales via Perplexity
+                popular_sales, timeless_sales = None, None
+                try:
+                    logger.info("Looking up record sales via Perplexity...")
+                    popular_sales, timeless_sales = await lookup_sales_for_tracks(
+                        popular_entry.exampleWork,
+                        popular_entry.artists,
+                        timeless_entry.exampleWork,
+                        timeless_entry.artists,
+                    )
+                except Exception as e:
+                    logger.warning(f"Record sales lookup failed: {e}")
+                
                 if popular_track:
                     popular_entry = ArtEntry(
                         genre=popular_entry.genre,
@@ -255,6 +269,7 @@ class ArtService:
                             embedUrl=popular_track.embed_url,
                             externalUrl=popular_track.external_url,
                             albumImageUrl=popular_track.album_image_url,
+                            recordSales=popular_sales,
                         )
                     )
                 
@@ -273,6 +288,7 @@ class ArtService:
                             embedUrl=timeless_track.embed_url,
                             externalUrl=timeless_track.external_url,
                             albumImageUrl=timeless_track.album_image_url,
+                            recordSales=timeless_sales,
                         )
                     )
             except Exception as e:

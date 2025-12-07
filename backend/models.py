@@ -20,6 +20,7 @@ class SpotifyTrack(BaseModel):
     embedUrl: str  # Spotify embed player URL
     externalUrl: str  # Open in Spotify URL
     albumImageUrl: Optional[str] = None
+    recordSales: Optional[str] = None  # e.g., "50 million copies sold"
 
 
 class ArtEntry(BaseModel):
