@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchArtData, toBackendRegion, type ArtData, type Region, type ArtForm, type TimePeriod } from "@/lib/api";
 import ArtCard from "./ArtCard";
-import LoadingModal from "./LoadingModal";
+import LoadingIndicator from "./LoadingIndicator";
 
 interface ArtDisplayProps {
   decade: TimePeriod;
@@ -12,7 +12,7 @@ interface ArtDisplayProps {
 const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [artData, setArtData] = useState<ArtData | null>(null);
-  const [showLoadingModal, setShowLoadingModal] = useState(false);
+  const [showLoadingHint, setShowLoadingHint] = useState(false);
   const isLoadingRef = useRef(false);
 
   useEffect(() => {
@@ -20,12 +20,12 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
     
     isLoadingRef.current = true;
     setIsLoading(true);
-    setShowLoadingModal(false);
+    setShowLoadingHint(false);
     
-    // Show modal after 1.5 seconds if still loading (indicates AI generation)
-    const modalTimer = setTimeout(() => {
+    // Show hint after 1.5 seconds if still loading
+    const hintTimer = setTimeout(() => {
       if (!isCancelled && isLoadingRef.current) {
-        setShowLoadingModal(true);
+        setShowLoadingHint(true);
       }
     }, 1500);
 
@@ -45,40 +45,37 @@ const ArtDisplay = ({ decade, region, artForm }: ArtDisplayProps) => {
         if (!isCancelled) {
           isLoadingRef.current = false;
           setIsLoading(false);
-          setShowLoadingModal(false);
+          setShowLoadingHint(false);
         }
       }
     };
 
-    // Small delay for smoother transition
     const timer = setTimeout(loadData, 300);
 
     return () => {
       isCancelled = true;
       isLoadingRef.current = false;
       clearTimeout(timer);
-      clearTimeout(modalTimer);
+      clearTimeout(hintTimer);
     };
   }, [decade, region, artForm]);
 
   return (
-    <>
-      <LoadingModal isOpen={showLoadingModal} />
-      <div className="w-full max-w-4xl mx-auto px-4 py-4">
-        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-          <ArtCard
-            title="Most Popular of the Decade"
-            entry={artData?.popular || null}
-            isLoading={isLoading}
-          />
-          <ArtCard
-            title="Most Timeless"
-            entry={artData?.timeless || null}
-            isLoading={isLoading}
-          />
-        </div>
+    <div className="w-full max-w-4xl mx-auto px-4 py-4">
+      <LoadingIndicator isVisible={showLoadingHint} />
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+        <ArtCard
+          title="Most Popular of the Decade"
+          entry={artData?.popular || null}
+          isLoading={isLoading}
+        />
+        <ArtCard
+          title="Most Timeless"
+          entry={artData?.timeless || null}
+          isLoading={isLoading}
+        />
       </div>
-    </>
+    </div>
   );
 };
 
