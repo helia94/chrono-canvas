@@ -30,6 +30,7 @@ class ArtService:
         Get art data for the given parameters.
         
         Uses cache if available, otherwise queries LLMs.
+        If cached but images are missing (for Visual Arts), fetches images and updates cache.
         """
         # Step 1: Check cache
         logger.info(f"Checking cache for {decade}/{region}/{art_form}")
@@ -37,6 +38,63 @@ class ArtService:
         
         if cached:
             logger.info(f"Cache hit for {decade}/{region}/{art_form}")
+            
+            # Check if we need to fetch images for Visual Arts
+            if art_form == "Visual Arts":
+                needs_popular_image = cached.popular.image is None
+                needs_timeless_image = cached.timeless.image is None
+                
+                if needs_popular_image or needs_timeless_image:
+                    logger.info(f"Cache hit but missing images, fetching from Met API...")
+                    try:
+                        popular_image, timeless_image = await search_artwork_images(
+                            cached.popular.name,
+                            cached.timeless.name,
+                            art_form
+                        )
+                        
+                        # Update entries with images
+                        updated = False
+                        popular_entry = cached.popular
+                        timeless_entry = cached.timeless
+                        
+                        if needs_popular_image and popular_image:
+                            popular_entry = ArtEntry(
+                                name=cached.popular.name,
+                                description=cached.popular.description,
+                                image=ArtImage(
+                                    url=popular_image.thumbnail_url,
+                                    sourceUrl=popular_image.source_url,
+                                )
+                            )
+                            updated = True
+                        
+                        if needs_timeless_image and timeless_image:
+                            timeless_entry = ArtEntry(
+                                name=cached.timeless.name,
+                                description=cached.timeless.description,
+                                image=ArtImage(
+                                    url=timeless_image.thumbnail_url,
+                                    sourceUrl=timeless_image.source_url,
+                                )
+                            )
+                            updated = True
+                        
+                        if updated:
+                            # Build updated result and re-cache
+                            cached = ArtData(
+                                decade=cached.decade,
+                                region=cached.region,
+                                artForm=cached.artForm,
+                                popular=popular_entry,
+                                timeless=timeless_entry,
+                            )
+                            await cache_layer.set(cached)
+                            logger.info(f"Updated cache with images for {decade}/{region}/{art_form}")
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch images for cached entry: {e}")
+                        # Return cached data without images
+            
             return cached
         
         logger.info(f"Cache miss for {decade}/{region}/{art_form}, querying LLMs...")
