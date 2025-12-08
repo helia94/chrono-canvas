@@ -142,3 +142,4 @@ async def search_music_videos(
     logger.info(f"YouTube: Found popular={popular_video is not None}, timeless={timeless_video is not None}")
     
     return popular_video, timeless_video
+
