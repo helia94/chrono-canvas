@@ -237,3 +237,17 @@
 .paper-globe-container svg {
   display: block;
 }
+
+/* Hot region pulse animation */
+@keyframes region-glow {
+  0%, 100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.hot-region-glow {
+  animation: region-glow 3s ease-in-out infinite;
+}

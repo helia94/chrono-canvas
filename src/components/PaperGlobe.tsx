@@ -11,6 +11,7 @@ const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 interface PaperGlobeProps {
   selectedRegion: string;
   onRegionChange: (region: string) => void;
+  hotRegions?: string[]; // Regions that are "hot" for the current decade
 }
 
 type SelectionMode = "regions" | "countries";
@@ -269,13 +270,16 @@ const countryToRegion: Record<string, Region> = {
 };
 
 
-const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
+const PaperGlobe = ({ selectedRegion, onRegionChange, hotRegions = [] }: PaperGlobeProps) => {
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [rotation, setRotation] = useState<[number, number]>([0, 0]);
   const [isDragging, setIsDragging] = useState(false);
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("regions");
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   const hasMoved = useRef(false);
+  
+  // Check if a region is "hot" for the current decade
+  const isHotRegion = (region: string): boolean => hotRegions.includes(region);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsDragging(true);
@@ -316,6 +320,8 @@ const PaperGlobe = ({ selectedRegion, onRegionChange }: PaperGlobeProps) => {
     const region = countryToRegion[countryName];
     if (region === selectedRegion) return "hsl(43, 80%, 46%)";
     if (region === hoveredRegion) return "hsl(43, 80%, 46%, 0.3)";
+    // Subtle glow for hot regions
+    if (region && isHotRegion(region)) return "hsl(43, 70%, 50%, 0.15)";
     return "transparent";
   };
 
