@@ -2,15 +2,23 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pydantic import BaseModel
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
-from database import init_db, close_db
+from database import init_db, close_db, get_db
 from models import ArtDataResponse
 from art_service import art_service
 from data import validate_inputs
+
+
+class FeedbackRequest(BaseModel):
+    decade: str
+    region: str
+    artForm: str
+    feedback: str  # "like" or "dislike"
 
 # Configure logging
 logging.basicConfig(
@@ -132,6 +140,45 @@ async def invalidate_cache_entry(decade: str, region: str, art_form: str):
     except Exception as e:
         logger.error(f"Error invalidating cache: {e}")
         raise HTTPException(status_code=500, detail="Failed to invalidate cache")
+
+
+@app.post("/api/feedback")
+async def submit_feedback(req: FeedbackRequest):
+    """
+    Track anonymous like/dislike feedback for a configuration.
+    
+    Stores feedback in the database for analytics.
+    """
+    if req.feedback not in ("like", "dislike"):
+        raise HTTPException(status_code=400, detail="Feedback must be 'like' or 'dislike'")
+    
+    try:
+        db = await get_db()
+        if db:
+            # Ensure feedback table exists
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id SERIAL PRIMARY KEY,
+                    decade VARCHAR(10) NOT NULL,
+                    region VARCHAR(100) NOT NULL,
+                    art_form VARCHAR(50) NOT NULL,
+                    feedback VARCHAR(10) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            await db.execute(
+                """
+                INSERT INTO feedback (decade, region, art_form, feedback)
+                VALUES ($1, $2, $3, $4)
+                """,
+                req.decade, req.region, req.artForm, req.feedback
+            )
+            logger.info(f"Feedback recorded: {req.decade}/{req.region}/{req.artForm} = {req.feedback}")
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Error recording feedback: {e}")
+        # Don't fail the request - feedback is non-critical
+        return {"status": "ok"}
 
 
 if __name__ == "__main__":

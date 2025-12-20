@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import DecadeSlider from "@/components/DecadeSlider";
 import PaperGlobe from "@/components/PaperGlobe";
@@ -6,17 +6,36 @@ import ArtFormSelector from "@/components/ArtFormSelector";
 import ArtDisplay from "@/components/ArtDisplay";
 import VisualArtGallery from "@/components/VisualArtGallery";
 import MusicPlayer from "@/components/MusicPlayer";
+import ShareAndFeedback from "@/components/ShareAndFeedback";
 import { useConfig } from "@/hooks/useConfig";
 import { useArtData } from "@/hooks/useArtData";
 import { type TimePeriod, type Region, type ArtForm } from "@/lib/api";
 
+// Parse URL params for initial state
+function getInitialState() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    decade: (params.get("decade") as TimePeriod) || "1920",
+    region: (params.get("region") as Region) || "Western Europe",
+    artForm: (params.get("artForm") as ArtForm) || "Visual Arts",
+  };
+}
+
 const Index = () => {
   const { config, isLoading: configLoading } = useConfig();
   
-  // Default to 1920s, Western Europe, Visual Arts as specified
-  const [selectedDecade, setSelectedDecade] = useState<TimePeriod>("1920");
-  const [selectedRegion, setSelectedRegion] = useState<Region>("Western Europe");
-  const [selectedArtForm, setSelectedArtForm] = useState<ArtForm>("Visual Arts");
+  // Initialize from URL params, then stay static
+  const initial = getInitialState();
+  const [selectedDecade, setSelectedDecade] = useState<TimePeriod>(initial.decade);
+  const [selectedRegion, setSelectedRegion] = useState<Region>(initial.region);
+  const [selectedArtForm, setSelectedArtForm] = useState<ArtForm>(initial.artForm);
+
+  // Clear URL params after reading (keep URL clean during use)
+  useEffect(() => {
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   // Fetch art data using shared hook
   const { artData, isLoading, showLoadingHint } = useArtData(
@@ -43,7 +62,16 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-6xl mx-auto px-2">
-        <Header />
+        <div className="flex justify-between items-start">
+          <Header />
+          <div className="pt-6 pr-4">
+            <ShareAndFeedback
+              decade={selectedDecade}
+              region={selectedRegion}
+              artForm={selectedArtForm}
+            />
+          </div>
+        </div>
         
         {/* Decade slider */}
         <section>
