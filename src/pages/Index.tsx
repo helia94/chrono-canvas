@@ -10,6 +10,7 @@ import ShareAndFeedback from "@/components/ShareAndFeedback";
 import { useConfig } from "@/hooks/useConfig";
 import { useArtData } from "@/hooks/useArtData";
 import { type TimePeriod, type Region, type ArtForm } from "@/lib/api";
+import { getHotRegionsForDecade } from "@/data/artHotspots";
 
 // Parse URL params for initial state
 function getInitialState() {
@@ -97,6 +98,7 @@ const Index = () => {
             <PaperGlobe
               selectedRegion={selectedRegion}
               onRegionChange={setSelectedRegion}
+              hotRegions={getHotRegionsForDecade(selectedDecade)}
             />
           </div>
           
