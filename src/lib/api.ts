@@ -130,15 +130,37 @@ export async function fetchArtDataExact(
  */
 export type FeedbackType = "like" | "dislike";
 
+export interface FeedbackCounts {
+  likes: number;
+  dislikes: number;
+}
+
+/**
+ * Fetch feedback counts for a specific configuration
+ */
+export async function fetchFeedbackCounts(
+  decade: string,
+  region: string,
+  artForm: string
+): Promise<FeedbackCounts> {
+  const params = new URLSearchParams({ decade, region, artForm });
+  const response = await fetch(`${API_BASE_URL}/api/feedback?${params}`);
+  if (!response.ok) {
+    return { likes: 0, dislikes: 0 };
+  }
+  return response.json();
+}
+
 /**
  * Submit anonymous feedback for a specific configuration
+ * Returns updated counts
  */
 export async function submitFeedback(
   decade: string,
   region: string,
   artForm: string,
   feedback: FeedbackType
-): Promise<void> {
+): Promise<FeedbackCounts> {
   const response = await fetch(`${API_BASE_URL}/api/feedback`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -147,5 +169,7 @@ export async function submitFeedback(
   if (!response.ok) {
     throw new Error(`Failed to submit feedback: ${response.statusText}`);
   }
+  const data = await response.json();
+  return { likes: data.likes || 0, dislikes: data.dislikes || 0 };
 }
 
