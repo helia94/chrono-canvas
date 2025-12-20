@@ -142,12 +142,54 @@ async def invalidate_cache_entry(decade: str, region: str, art_form: str):
         raise HTTPException(status_code=500, detail="Failed to invalidate cache")
 
 
+@app.get("/api/feedback")
+async def get_feedback_counts(
+    decade: str = Query(...),
+    region: str = Query(...),
+    artForm: str = Query(...),
+):
+    """Get like/dislike counts for a specific configuration."""
+    try:
+        db = await get_db()
+        if db:
+            # Ensure feedback table exists
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id SERIAL PRIMARY KEY,
+                    decade VARCHAR(10) NOT NULL,
+                    region VARCHAR(100) NOT NULL,
+                    art_form VARCHAR(50) NOT NULL,
+                    feedback VARCHAR(10) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            result = await db.fetch(
+                """
+                SELECT feedback, COUNT(*) as count 
+                FROM feedback 
+                WHERE decade = $1 AND region = $2 AND art_form = $3
+                GROUP BY feedback
+                """,
+                decade, region, artForm
+            )
+            counts = {"likes": 0, "dislikes": 0}
+            for row in result:
+                if row["feedback"] == "like":
+                    counts["likes"] = row["count"]
+                elif row["feedback"] == "dislike":
+                    counts["dislikes"] = row["count"]
+            return counts
+        return {"likes": 0, "dislikes": 0}
+    except Exception as e:
+        logger.error(f"Error fetching feedback counts: {e}")
+        return {"likes": 0, "dislikes": 0}
+
+
 @app.post("/api/feedback")
 async def submit_feedback(req: FeedbackRequest):
     """
     Track anonymous like/dislike feedback for a configuration.
-    
-    Stores feedback in the database for analytics.
+    Returns updated counts.
     """
     if req.feedback not in ("like", "dislike"):
         raise HTTPException(status_code=400, detail="Feedback must be 'like' or 'dislike'")
@@ -173,12 +215,28 @@ async def submit_feedback(req: FeedbackRequest):
                 """,
                 req.decade, req.region, req.artForm, req.feedback
             )
+            # Return updated counts
+            result = await db.fetch(
+                """
+                SELECT feedback, COUNT(*) as count 
+                FROM feedback 
+                WHERE decade = $1 AND region = $2 AND art_form = $3
+                GROUP BY feedback
+                """,
+                req.decade, req.region, req.artForm
+            )
+            counts = {"likes": 0, "dislikes": 0}
+            for row in result:
+                if row["feedback"] == "like":
+                    counts["likes"] = row["count"]
+                elif row["feedback"] == "dislike":
+                    counts["dislikes"] = row["count"]
             logger.info(f"Feedback recorded: {req.decade}/{req.region}/{req.artForm} = {req.feedback}")
-        return {"status": "ok"}
+            return {"status": "ok", **counts}
+        return {"status": "ok", "likes": 0, "dislikes": 0}
     except Exception as e:
         logger.error(f"Error recording feedback: {e}")
-        # Don't fail the request - feedback is non-critical
-        return {"status": "ok"}
+        return {"status": "ok", "likes": 0, "dislikes": 0}
 
 
 if __name__ == "__main__":
