@@ -125,3 +125,27 @@ export async function fetchArtDataExact(
   return response.json();
 }
 
+/**
+ * Feedback types
+ */
+export type FeedbackType = "like" | "dislike";
+
+/**
+ * Submit anonymous feedback for a specific configuration
+ */
+export async function submitFeedback(
+  decade: string,
+  region: string,
+  artForm: string,
+  feedback: FeedbackType
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decade, region, artForm, feedback }),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to submit feedback: ${response.statusText}`);
+  }
+}
+
