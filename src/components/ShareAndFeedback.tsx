@@ -24,7 +24,7 @@ const ShareAndFeedback = ({ decade, region, artForm }: ShareAndFeedbackProps) =>
 
   const handleShare = async () => {
     const params = new URLSearchParams({ decade, region, artForm });
-    const url = `${window.location.origin}${window.location.pathname}?${params}`;
+    const url = `${window.location.origin}/art?${params}`;
     
     try {
       await navigator.clipboard.writeText(url);
