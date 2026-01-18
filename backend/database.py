@@ -64,6 +64,32 @@ class ArtCache(Base):
     )
 
 
+class Emotion(Base):
+    """Predefined emotions for autocomplete."""
+
+    __tablename__ = "emotions"
+
+    id = Column(String(50), primary_key=True)  # lowercase emotion name as ID
+    name = Column(String(100), nullable=False)  # display name
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_emotions_name', 'name'),
+    )
+
+
+class EmotionCache(Base):
+    """Cache for emotion resolution results."""
+
+    __tablename__ = "emotion_cache"
+
+    emotion = Column(String(100), primary_key=True)  # normalized emotion query
+    intro = Column(Text, nullable=False)
+    emotions_json = Column(Text, nullable=False)  # JSON array of emotion words
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # Engine and session factory (initialized lazily)
 _engine = None
 _async_session_factory = None
@@ -105,7 +131,7 @@ async def init_db():
             ADD COLUMN IF NOT EXISTS timeless_youtube_url VARCHAR(500),
             ADD COLUMN IF NOT EXISTS timeless_youtube_embed_url VARCHAR(500)
         """))
-    
+
     return _engine
 
 

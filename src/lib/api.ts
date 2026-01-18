@@ -142,17 +142,46 @@ export interface EmotionResponse {
 
 /**
  * Resolve an emotion into nuanced cross-cultural variants
+ * @param emotion - The emotion to explore
+ * @param useCache - Whether to use cached results (default: true)
  */
-export async function resolveEmotion(emotion: string): Promise<EmotionResponse> {
+export async function resolveEmotion(
+  emotion: string,
+  useCache: boolean = true
+): Promise<EmotionResponse> {
   const response = await fetch(`${API_BASE_URL}/api/emotion`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emotion }),
+    body: JSON.stringify({ emotion, use_cache: useCache }),
   });
   if (!response.ok) {
     throw new Error(`Failed to resolve emotion: ${response.statusText}`);
   }
   return response.json();
+}
+
+/**
+ * Emotion autocomplete suggestion
+ */
+export interface EmotionSuggestion {
+  id: number;
+  name: string;
+}
+
+/**
+ * Get emotion suggestions for autocomplete
+ * @param query - The search query
+ */
+export async function getEmotionSuggestions(
+  query: string
+): Promise<EmotionSuggestion[]> {
+  const params = new URLSearchParams({ q: query });
+  const response = await fetch(`${API_BASE_URL}/api/emotions/autocomplete?${params}`);
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  return data.suggestions || [];
 }
 
 /**

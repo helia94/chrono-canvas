@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Heart, Loader2, Sparkles } from "lucide-react";
-import { resolveEmotion, EmotionWord } from "@/lib/api";
+import { ArrowLeft, Heart, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { resolveEmotion, getEmotionSuggestions, EmotionWord, EmotionSuggestion } from "@/lib/api";
 
 const quickEmotions = ["Calm", "Angry", "Bitter", "Joyful", "Melancholy", "Longing"];
 
@@ -10,17 +10,59 @@ const Emotion = () => {
   const [result, setResult] = useState<{ intro: string; emotions: EmotionWord[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [getNew, setGetNew] = useState(false);
+  const [suggestions, setSuggestions] = useState<EmotionSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (emotion.trim().length < 1) {
+        setSuggestions([]);
+        return;
+      }
+      const results = await getEmotionSuggestions(emotion.trim());
+      setSuggestions(results);
+    };
+
+    const debounce = setTimeout(fetchSuggestions, 200);
+    return () => clearTimeout(debounce);
+  }, [emotion]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectSuggestion = (name: string) => {
+    setEmotion(name);
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emotion.trim() || loading) return;
 
+    setShowSuggestions(false);
     setLoading(true);
     setResult(null);
     setError(null);
 
     try {
-      const data = await resolveEmotion(emotion.trim());
+      const data = await resolveEmotion(emotion.trim(), !getNew);
       setResult(data);
     } catch (err) {
       console.error("Request failed:", err);
@@ -79,13 +121,34 @@ const Emotion = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-12">
           <div className="flex gap-3">
-            <input
-              type="text"
-              placeholder="Type your emotion..."
-              value={emotion}
-              onChange={(e) => setEmotion(e.target.value)}
-              className="flex-1 px-4 py-3 bg-card border border-border rounded-lg font-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-            />
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Type your emotion..."
+                value={emotion}
+                onChange={(e) => setEmotion(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                className="w-full px-4 py-3 bg-card border border-border rounded-lg font-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                >
+                  {suggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onClick={() => handleSelectSuggestion(suggestion.name)}
+                      className="w-full px-4 py-2 text-left font-body text-foreground hover:bg-primary/10 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {suggestion.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="submit"
               disabled={loading || !emotion.trim()}
@@ -103,6 +166,27 @@ const Emotion = () => {
                 </>
               )}
             </button>
+          </div>
+
+          {/* Get New toggle */}
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setGetNew(!getNew)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-body text-sm transition-all ${
+                getNew
+                  ? "bg-primary/20 text-primary border border-primary/30"
+                  : "bg-card text-muted-foreground border border-border hover:border-primary/30"
+              }`}
+            >
+              <RefreshCw className={`w-4 h-4 ${getNew ? "text-primary" : ""}`} />
+              <span>Get New</span>
+            </button>
+            {getNew && (
+              <span className="text-xs text-muted-foreground">
+                Fresh results from AI
+              </span>
+            )}
           </div>
         </form>
 

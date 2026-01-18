@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from database import init_db, close_db, get_db
+from repositories import emotion_repository, emotion_cache_repository
 from models import ArtDataResponse
 from art_service import art_service
 from data import validate_inputs
@@ -24,6 +25,7 @@ class FeedbackRequest(BaseModel):
 
 class EmotionRequest(BaseModel):
     emotion: str
+    use_cache: bool = True
 
 # Configure logging
 logging.basicConfig(
@@ -248,25 +250,35 @@ async def submit_feedback(req: FeedbackRequest):
 async def resolve_emotion(req: EmotionRequest):
     """
     Resolve an emotion into nuanced cross-cultural variants.
-    
+
     Takes a base emotion word and returns related emotion words
     from different languages and cultures with their meanings
     and cultural context.
+
+    Set use_cache=false to bypass cache and get fresh results.
     """
     emotion = req.emotion.strip()
     if not emotion:
         raise HTTPException(status_code=400, detail="Emotion is required")
-    
+
     if len(emotion) > 100:
         raise HTTPException(status_code=400, detail="Emotion text too long")
-    
+
     try:
+        # Check cache first if enabled
+        if req.use_cache:
+            cached = await emotion_cache_repository.find_by_emotion(emotion)
+            if cached:
+                logger.info(f"Cache hit for emotion: {emotion}")
+                return cached
+
+        # Resolve emotion via LLM
         result = await emotion_resolver.resolve(emotion)
-        
+
         if not result.success:
             raise HTTPException(status_code=500, detail=result.error or "Failed to resolve emotion")
-        
-        return {
+
+        response = {
             "intro": result.intro,
             "emotions": [
                 {
@@ -278,11 +290,31 @@ async def resolve_emotion(req: EmotionRequest):
                 for e in result.emotions
             ],
         }
+
+        # Save to cache
+        await emotion_cache_repository.save(emotion, result.intro, response["emotions"])
+        logger.info(f"Cached emotion result: {emotion}")
+
+        return response
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error resolving emotion: {e}")
         raise HTTPException(status_code=500, detail="Failed to resolve emotion")
+
+
+@app.get("/api/emotions/autocomplete")
+async def autocomplete_emotions(q: str = Query("", max_length=50)):
+    """
+    Get emotion suggestions for autocomplete.
+
+    Returns emotions that start with or contain the query string.
+    """
+    query = q.strip().lower()
+    emotions = await emotion_repository.search(query, limit=10)
+    return {
+        "suggestions": [{"id": e.id, "name": e.name} for e in emotions]
+    }
 
 
 if __name__ == "__main__":

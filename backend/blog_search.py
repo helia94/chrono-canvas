@@ -119,30 +119,16 @@ async def search_blogs_background(
     # Update cache with blog URLs if found
     if popular_url or timeless_url:
         try:
-            from database import ArtCache, get_session
-            from sqlalchemy import select
-            
+            from repositories import art_cache_repository
+
             decade_key, region_key, art_form_key = cache_key
-            
-            async for session in get_session():
-                result = await session.execute(
-                    select(ArtCache).where(
-                        ArtCache.decade == decade_key,
-                        ArtCache.region == region_key,
-                        ArtCache.art_form == art_form_key,
-                    )
-                )
-                cached = result.scalar_one_or_none()
-                
-                if cached:
-                    if popular_url:
-                        cached.popular_blog_url = popular_url
-                    if timeless_url:
-                        cached.timeless_blog_url = timeless_url
-                    await session.commit()
-                    logger.info(f"Updated cache with blog URLs for {decade}/{region}/{art_form}")
-                break
-                
+            updated = await art_cache_repository.update_blog_urls(
+                decade_key, region_key, art_form_key,
+                popular_blog_url=popular_url,
+                timeless_blog_url=timeless_url,
+            )
+            if updated:
+                logger.info(f"Updated cache with blog URLs for {decade}/{region}/{art_form}")
         except Exception as e:
             logger.warning(f"Failed to update cache with blog URLs: {e}")
     
