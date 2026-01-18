@@ -12,6 +12,7 @@ from database import init_db, close_db, get_db
 from models import ArtDataResponse
 from art_service import art_service
 from data import validate_inputs
+from emotion_resolver import emotion_resolver
 
 
 class FeedbackRequest(BaseModel):
@@ -19,6 +20,10 @@ class FeedbackRequest(BaseModel):
     region: str
     artForm: str
     feedback: str  # "like" or "dislike"
+
+
+class EmotionRequest(BaseModel):
+    emotion: str
 
 # Configure logging
 logging.basicConfig(
@@ -237,6 +242,47 @@ async def submit_feedback(req: FeedbackRequest):
     except Exception as e:
         logger.error(f"Error recording feedback: {e}")
         return {"status": "ok", "likes": 0, "dislikes": 0}
+
+
+@app.post("/api/emotion")
+async def resolve_emotion(req: EmotionRequest):
+    """
+    Resolve an emotion into nuanced cross-cultural variants.
+    
+    Takes a base emotion word and returns related emotion words
+    from different languages and cultures with their meanings
+    and cultural context.
+    """
+    emotion = req.emotion.strip()
+    if not emotion:
+        raise HTTPException(status_code=400, detail="Emotion is required")
+    
+    if len(emotion) > 100:
+        raise HTTPException(status_code=400, detail="Emotion text too long")
+    
+    try:
+        result = await emotion_resolver.resolve(emotion)
+        
+        if not result.success:
+            raise HTTPException(status_code=500, detail=result.error or "Failed to resolve emotion")
+        
+        return {
+            "intro": result.intro,
+            "emotions": [
+                {
+                    "name": e.name,
+                    "language": e.language,
+                    "meaning": e.meaning,
+                    "cultural_context": e.cultural_context,
+                }
+                for e in result.emotions
+            ],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resolving emotion: {e}")
+        raise HTTPException(status_code=500, detail="Failed to resolve emotion")
 
 
 if __name__ == "__main__":

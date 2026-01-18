@@ -126,6 +126,36 @@ export async function fetchArtDataExact(
 }
 
 /**
+ * Emotion Explorer types
+ */
+export interface EmotionWord {
+  name: string;
+  language: string;
+  meaning: string;
+  cultural_context: string;
+}
+
+export interface EmotionResponse {
+  intro: string;
+  emotions: EmotionWord[];
+}
+
+/**
+ * Resolve an emotion into nuanced cross-cultural variants
+ */
+export async function resolveEmotion(emotion: string): Promise<EmotionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/emotion`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emotion }),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to resolve emotion: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
  * Feedback types
  */
 export type FeedbackType = "like" | "dislike";
@@ -172,4 +202,3 @@ export async function submitFeedback(
   const data = await response.json();
   return { likes: data.likes || 0, dislikes: data.dislikes || 0 };
 }
-
