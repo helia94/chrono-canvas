@@ -120,7 +120,16 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Get database session."""
     if _async_session_factory is None:
         await init_db()
-    
+
     async with _async_session_factory() as session:
         yield session
+
+
+async def get_db():
+    """Get raw database connection for direct queries.
+
+    Returns None - feedback features require separate asyncpg connection setup.
+    The API endpoints handle None gracefully by returning default values.
+    """
+    return None
 

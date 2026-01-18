@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "chronocanvas-backend"
 version = "2.0.0"
@@ -46,4 +50,32 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.hatch.envs.default]
+skip-install = true
+dependencies = [
+    "fastapi>=0.109.2",
+    "uvicorn[standard]>=0.27.1",
+    "pydantic>=2.6.1",
+    "pydantic-settings>=2.2.1",
+    "python-dotenv>=1.0.1",
+    "asyncpg>=0.29.0",
+    "sqlalchemy[asyncio]>=2.0.27",
+    "httpx>=0.27.0",
+    "openai>=1.12.0",
+    "anthropic>=0.18.1",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.2.0",
+]
+
+[tool.hatch.envs.default.scripts]
+dev = "uvicorn main:app --reload --port 8000"
+prod = "uvicorn main:app --host 0.0.0.0 --port 8000"
+test = "pytest"
+lint = "ruff check ."
+format = "ruff format ."
 
